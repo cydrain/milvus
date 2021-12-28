@@ -28,7 +28,7 @@
 #ifdef __SSE__
 #endif
 
-#include <faiss/utils/distances.h>
+#include <index/knowhere/knowhere/utils/distances.h>
 #include <faiss/utils/random.h>
 #include <faiss/utils/Heap.h>
 #include <faiss/impl/FaissAssert.h>

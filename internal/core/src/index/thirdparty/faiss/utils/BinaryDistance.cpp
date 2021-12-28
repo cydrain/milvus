@@ -23,7 +23,7 @@
 #include <faiss/utils/substructure-inl.h>
 #include <faiss/utils/superstructure-inl.h>
 
-#include <faiss/utils/distances.h>
+#include <index/knowhere/knowhere/utils/distances.h>
 
 namespace faiss {
 

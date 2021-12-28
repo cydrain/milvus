@@ -13,8 +13,8 @@
 #define FAISS_JACCARD_INL_H
 
 #include <faiss/utils/BinaryDistance.h>
-#include <faiss/utils/distances_avx.h>
-#include <faiss/utils/distances_avx512.h>
+#include <index/knowhere/knowhere/utils/distances_avx.h>
+#include <index/knowhere/knowhere/utils/distances_avx512.h>
 
 namespace faiss {
 

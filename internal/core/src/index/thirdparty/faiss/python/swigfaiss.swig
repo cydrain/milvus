@@ -101,7 +101,7 @@ extern "C" {
 
 #include <faiss/IVFlib.h>
 #include <faiss/utils/utils.h>
-#include <faiss/utils/distances.h>
+#include <index/knowhere/knowhere/utils/distances.h>
 #include <faiss/utils/extra_distances.h>
 #include <faiss/utils/random.h>
 #include <faiss/utils/Heap.h>

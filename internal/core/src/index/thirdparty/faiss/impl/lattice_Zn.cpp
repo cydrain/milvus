@@ -19,7 +19,7 @@
 #include <unordered_map>
 #include <algorithm>
 
-#include <faiss/utils/distances.h>
+#include <index/knowhere/knowhere/utils/distances.h>
 #include <faiss/FaissHook.h>
 
 namespace faiss {

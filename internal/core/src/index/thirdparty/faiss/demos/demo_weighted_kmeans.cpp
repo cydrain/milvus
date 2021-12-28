@@ -10,7 +10,7 @@
 
 #include <faiss/Clustering.h>
 #include <faiss/utils/random.h>
-#include <faiss/utils/distances.h>
+#include <index/knowhere/knowhere/utils/distances.h>
 #include <faiss/IndexFlat.h>
 #include <faiss/IndexHNSW.h>
 

@@ -11,7 +11,7 @@
 #include <faiss/IndexLattice.h>
 #include <faiss/utils/hamming.h>    // for the bitstring routines
 #include <faiss/impl/FaissAssert.h>
-#include <faiss/utils/distances.h>
+#include <index/knowhere/knowhere/utils/distances.h>
 
 namespace faiss {
 

@@ -20,7 +20,7 @@
 #include <faiss/impl/FaissAssert.h>
 #include <faiss/VectorTransform.h>
 #include <faiss/IndexFlat.h>
-#include <faiss/utils/distances.h>
+#include <index/knowhere/knowhere/utils/distances.h>
 
 
 extern "C" {

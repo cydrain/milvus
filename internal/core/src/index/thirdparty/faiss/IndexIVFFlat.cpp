@@ -13,7 +13,7 @@
 
 #include <faiss/IndexFlat.h>
 
-#include <faiss/utils/distances.h>
+#include <index/knowhere/knowhere/utils/distances.h>
 #include <faiss/utils/utils.h>
 #include <faiss/impl/FaissAssert.h>
 #include <faiss/impl/AuxIndexStructures.h>

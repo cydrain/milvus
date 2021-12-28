@@ -9,9 +9,9 @@
 #include <faiss/impl/ScalarQuantizerDC.h>
 #include <faiss/impl/ScalarQuantizerDC_avx.h>
 #include <faiss/impl/ScalarQuantizerDC_avx512.h>
-#include <faiss/utils/distances.h>
-#include <faiss/utils/distances_avx.h>
-#include <faiss/utils/distances_avx512.h>
+#include <index/knowhere/knowhere/utils/distances.h>
+#include <index/knowhere/knowhere/utils/distances_avx.h>
+#include <index/knowhere/knowhere/utils/distances_avx512.h>
 #include <faiss/utils/instruction_set.h>
 
 namespace faiss {

@@ -26,7 +26,7 @@
 #include <faiss/utils/utils.h>
 #include <faiss/impl/AuxIndexStructures.h>
 #include <faiss/IndexFlat.h>
-#include <faiss/utils/distances.h>
+#include <index/knowhere/knowhere/utils/distances.h>
 #include <faiss/FaissHook.h>
 
 /*

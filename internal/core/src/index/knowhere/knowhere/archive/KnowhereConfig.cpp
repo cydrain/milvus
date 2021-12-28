@@ -16,7 +16,7 @@
 #include "faiss/Clustering.h"
 #include "faiss/FaissHook.h"
 #include "faiss/common.h"
-#include "faiss/utils/distances.h"
+#include "index/knowhere/knowhere/utils/distances.h"
 #include "faiss/utils/utils.h"
 #include "knowhere/common/Exception.h"
 #include "knowhere/common/Log.h"

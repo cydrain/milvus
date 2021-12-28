@@ -40,7 +40,7 @@
 #include "faiss/IndexBinaryFromFloat.h"
 #include "faiss/IndexBinaryHNSW.h"
 #include "faiss/IndexBinaryIVF.h"
-#include "faiss/utils/distances.h"
+#include "index/knowhere/knowhere/utils/distances.h"
 #include "faiss/clone_index.h"
 #include "faiss/index_factory.h"
 

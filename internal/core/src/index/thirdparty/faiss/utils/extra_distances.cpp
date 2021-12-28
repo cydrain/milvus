@@ -7,7 +7,7 @@
 
 // -*- c++ -*-
 
-#include <faiss/utils/distances.h>
+#include <index/knowhere/knowhere/utils/distances.h>
 
 #include <cmath>
 #include <omp.h>

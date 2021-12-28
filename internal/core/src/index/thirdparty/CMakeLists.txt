@@ -152,7 +152,7 @@ macro(build_faiss)
 
     if(NOT BLAS_FOUND)
         message(STATUS "OpenBLAS BOUNDED")
-        ExternalProject_Add_StepDependencies(faiss_ep configure openblas_ep)
+        ExternalProject_Add_StepDependencies(faiss_ep configure openblas_ep knowhere_utils)
     endif()
 
     file(MAKE_DIRECTORY "${FAISS_INCLUDE_DIR}")
@@ -164,7 +164,7 @@ macro(build_faiss)
                 IMPORTED_LOCATION               "${FAISS_STATIC_LIB}"
                 INTERFACE_INCLUDE_DIRECTORIES   "${FAISS_INCLUDE_DIR}")
 
-    target_link_libraries( faiss INTERFACE openblas )
+    target_link_libraries( faiss INTERFACE knowhere_utils openblas )
     add_dependencies(faiss faiss_ep)
 
 endmacro()

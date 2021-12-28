@@ -29,7 +29,7 @@
 #include <faiss/gpu/StandardGpuResources.h>
 #include <faiss/index_factory.h>
 #include <faiss/index_io.h>
-#include <faiss/utils/distances.h>
+#include <index/knowhere/knowhere/utils/distances.h>
 
 /*****************************************************
  * To run this test, please download the HDF5 from

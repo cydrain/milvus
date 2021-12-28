@@ -13,7 +13,7 @@
 #include <faiss/IndexIVFPQ.h>
 #include <faiss/IndexFlat.h>
 #include <faiss/utils/utils.h>
-#include <faiss/utils/distances.h>
+#include <index/knowhere/knowhere/utils/distances.h>
 
 
 namespace {
