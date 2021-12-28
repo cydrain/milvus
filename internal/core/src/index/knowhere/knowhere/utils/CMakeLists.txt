@@ -34,8 +34,8 @@ add_library(utils_avx512 OBJECT
         ${UTILS_AVX512_SRC}
         )
 
-target_compile_options(utils_avx PRIVATE "-mf16c,-mavx2")
-target_compile_options(utils_avx512 PRIVATE "-mf16c,-mavx512f,-mavx512dq,-mavx512bw")
+target_compile_options(utils_avx PUBLIC "-mf16c;-mavx2")
+target_compile_options(utils_avx512 PUBLIC "-mf16c;-mavx512f;-mavx512dq;-mavx512bw")
 
 add_library(knowhere_utils STATIC
         ${UTILS_SRC}
@@ -43,6 +43,5 @@ add_library(knowhere_utils STATIC
         $<TARGET_OBJECTS:utils_avx512>
         )
 
-target_link_libraries(knowhere_utils
-        openblas
-        )
+target_compile_options(knowhere_utils PUBLIC "-msse3")
+target_link_libraries(knowhere_utils PUBLIC openblas)

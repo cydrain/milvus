@@ -106,6 +106,8 @@ if (MILVUS_SUPPORT_SPTAG)
             )
 endif ()
 
+add_subdirectory(knowhere/utils)
+
 set(depend_libs
         faiss
         gomp
