@@ -23,7 +23,7 @@
 #include	"NGT/Common.h"
 #include	"NGT/ObjectSpaceRepository.h"
 
-#include "index/knowhere/knowhere/utils/BitsetView.h"
+#include <knowhere/utils/BitsetView.h>
 
 #include	"NGT/HashBasedBooleanSet.h"
 

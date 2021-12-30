@@ -11,7 +11,7 @@
 
 #include <stdint.h>
 
-#include <index/knowhere/knowhere/utils/BitsetView.h>
+#include <knowhere/utils/BitsetView.h>
 #include <faiss/impl/AuxIndexStructures.h>
 
 

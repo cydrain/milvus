@@ -17,6 +17,7 @@
 #include <string.h>
 #include <vector>
 
+// namespace knowhere {
 namespace faiss {
 
 class ConcurrentBitset {

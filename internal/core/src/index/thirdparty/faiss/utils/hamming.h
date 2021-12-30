@@ -28,7 +28,7 @@
 #include <stdint.h>
 
 #include <faiss/utils/Heap.h>
-#include <index/knowhere/knowhere/utils/BitsetView.h>
+#include <knowhere/utils/BitsetView.h>
 #include <faiss/impl/AuxIndexStructures.h>
 
 /* The Hamming distance type */

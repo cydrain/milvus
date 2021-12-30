@@ -81,7 +81,7 @@ macro(build_faiss)
             "CXX=${FAISS_CXX_COMPILER}"
             "NVCC=${FAISS_CUDA_COMPILER}"
             "CFLAGS=${EP_C_FLAGS}"
-            "CXXFLAGS=${EP_CXX_FLAGS} -msse4.2 -O3"
+            "CXXFLAGS=${EP_CXX_FLAGS} -msse4.2 -O3 -fpermissive -I\ ${INDEX_SOURCE_DIR}/knowhere"
             --without-python)
 
     message(STATUS "${FAISS_CONFIGURE_ARGS}")
@@ -149,6 +149,8 @@ macro(build_faiss)
                 BUILD_BYPRODUCTS
                 ${FAISS_STATIC_LIB})
     endif ()
+    
+    ExternalProject_Add_StepDependencies(faiss_ep configure knowhere_utils)
 
     if(NOT BLAS_FOUND)
         message(STATUS "OpenBLAS BOUNDED")
