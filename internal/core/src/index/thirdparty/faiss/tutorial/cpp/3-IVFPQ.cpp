@@ -10,7 +10,7 @@
 
 #include <faiss/IndexFlat.h>
 #include <faiss/IndexIVFPQ.h>
-#include <faiss/utils/BitsetView.h>
+#include <index/knowhere/knowhere/utils/BitsetView.h>
 
 
 int main() {

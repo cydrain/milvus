@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <faiss/utils/BitsetView.h>
+#include <index/knowhere/knowhere/utils/BitsetView.h>
 #include <memory>
 #include <utility>
 #include <vector>

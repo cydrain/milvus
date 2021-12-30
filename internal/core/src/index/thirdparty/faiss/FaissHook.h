@@ -4,7 +4,7 @@
 #pragma once
 
 #include <string>
-#include <faiss/FaissHookFvec.h>
+#include <index/knowhere/knowhere/utils/FaissHookFvec.h>
 #include <faiss/impl/ScalarQuantizer.h>
 #include <faiss/MetricType.h>
 

@@ -14,7 +14,7 @@
 #include <map>
 #include <memory>
 #include <string>
-#include "faiss/utils/BitsetView.h"
+#include "index/knowhere/knowhere/utils/BitsetView.h"
 #include "knowhere/index/Index.h"
 
 namespace milvus {

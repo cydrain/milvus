@@ -24,7 +24,7 @@
 #include <boost/align/aligned_allocator.hpp>
 #include <NamedType/named_type.hpp>
 
-#include "faiss/utils/BitsetView.h"
+#include "knowhere/utils/BitsetView.h"
 #include "faiss/MetricType.h"
 #include "pb/schema.pb.h"
 #include "utils/Types.h"

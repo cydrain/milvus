@@ -36,7 +36,7 @@
 #include <faiss/gpu/StandardGpuResources.h>
 #include <faiss/index_factory.h>
 #include <faiss/index_io.h>
-#include <faiss/utils/BitsetView.h>
+#include <index/knowhere/knowhere/utils/BitsetView.h>
 #include <faiss/utils/distances.h>
 
 /*****************************************************

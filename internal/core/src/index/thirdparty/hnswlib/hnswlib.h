@@ -28,7 +28,7 @@
 #include <vector>
 
 #include <string.h>
-#include <faiss/utils/BitsetView.h>
+#include <index/knowhere/knowhere/utils/BitsetView.h>
 
 namespace hnswlib {
     typedef int64_t labeltype;

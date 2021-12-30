@@ -14,7 +14,7 @@
 #include <map>
 #include <memory>
 #include <string>
-#include "faiss/utils/BitsetView.h"
+#include "knowhere/utils/BitsetView.h"
 #include "knowhere/index/Index.h"
 #include <boost/dynamic_bitset.hpp>
 

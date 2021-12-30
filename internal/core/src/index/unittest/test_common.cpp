@@ -14,7 +14,7 @@
 #include "knowhere/common/Timer.h"
 #include "knowhere/knowhere/common/Exception.h"
 #include "unittest/utils.h"
-#include "faiss/utils/BitsetView.h"
+#include "index/knowhere/knowhere/utils/BitsetView.h"
 #include <boost/dynamic_bitset.hpp>
 
 /*Some unittest for knowhere/common, mainly for improve code coverage.*/

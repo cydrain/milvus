@@ -14,7 +14,7 @@
 
 #include "faiss/MetricType.h"
 #include <stdint.h>
-#include <faiss/utils/BitsetView.h>
+#include <index/knowhere/knowhere/utils/BitsetView.h>
 #include <faiss/utils/Heap.h>
 #include <faiss/impl/AuxIndexStructures.h>
 
