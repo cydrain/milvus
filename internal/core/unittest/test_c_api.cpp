@@ -1133,8 +1133,8 @@ TEST(CApiTest, LoadIndex_Search) {
 
     auto result = indexing->Query(query_dataset, conf, nullptr);
 
-    auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis = result->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids = knowhere::GetDatasetIDs(result);
+    auto dis = knowhere::GetDatasetDistance(result);
     // for (int i = 0; i < std::min(num_query * K, 100); ++i) {
     //    std::cout << ids[i] << "->" << dis[i] << std::endl;
     //}
@@ -1217,8 +1217,8 @@ TEST(CApiTest, Indexing_Without_Predicate) {
     // gen query dataset
     auto query_dataset = knowhere::GenDataset(num_queries, DIM, query_ptr);
     auto result_on_index = indexing->Query(query_dataset, conf, nullptr);
-    auto ids = result_on_index->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis = result_on_index->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids = knowhere::GetDatasetIDs(result_on_index);
+    auto dis = knowhere::GetDatasetDistance(result_on_index);
     std::vector<int64_t> vec_ids(ids, ids + TOPK * num_queries);
     std::vector<float> vec_dis;
     for (int j = 0; j < TOPK * num_queries; ++j) {
@@ -1340,8 +1340,8 @@ TEST(CApiTest, Indexing_Expr_Without_Predicate) {
     // gen query dataset
     auto query_dataset = knowhere::GenDataset(num_queries, DIM, query_ptr);
     auto result_on_index = indexing->Query(query_dataset, conf, nullptr);
-    auto ids = result_on_index->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis = result_on_index->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids = knowhere::GetDatasetIDs(result_on_index);
+    auto dis = knowhere::GetDatasetDistance(result_on_index);
     std::vector<int64_t> vec_ids(ids, ids + TOPK * num_queries);
     std::vector<float> vec_dis;
     for (int j = 0; j < TOPK * num_queries; ++j) {
@@ -1480,8 +1480,8 @@ TEST(CApiTest, Indexing_With_float_Predicate_Range) {
     // gen query dataset
     auto query_dataset = knowhere::GenDataset(num_queries, DIM, query_ptr);
     auto result_on_index = indexing->Query(query_dataset, conf, nullptr);
-    auto ids = result_on_index->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis = result_on_index->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids = knowhere::GetDatasetIDs(result_on_index);
+    auto dis = knowhere::GetDatasetDistance(result_on_index);
     std::vector<int64_t> vec_ids(ids, ids + TOPK * num_queries);
     std::vector<float> vec_dis;
     for (int j = 0; j < TOPK * num_queries; ++j) {
@@ -1635,8 +1635,8 @@ TEST(CApiTest, Indexing_Expr_With_float_Predicate_Range) {
     // gen query dataset
     auto query_dataset = knowhere::GenDataset(num_queries, DIM, query_ptr);
     auto result_on_index = indexing->Query(query_dataset, conf, nullptr);
-    auto ids = result_on_index->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis = result_on_index->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids = knowhere::GetDatasetIDs(result_on_index);
+    auto dis = knowhere::GetDatasetDistance(result_on_index);
     std::vector<int64_t> vec_ids(ids, ids + TOPK * num_queries);
     std::vector<float> vec_dis;
     for (int j = 0; j < TOPK * num_queries; ++j) {
@@ -1774,8 +1774,8 @@ TEST(CApiTest, Indexing_With_float_Predicate_Term) {
     // gen query dataset
     auto query_dataset = knowhere::GenDataset(num_queries, DIM, query_ptr);
     auto result_on_index = indexing->Query(query_dataset, conf, nullptr);
-    auto ids = result_on_index->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis = result_on_index->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids = knowhere::GetDatasetIDs(result_on_index);
+    auto dis = knowhere::GetDatasetDistance(result_on_index);
     std::vector<int64_t> vec_ids(ids, ids + TOPK * num_queries);
     std::vector<float> vec_dis;
     for (int j = 0; j < TOPK * num_queries; ++j) {
@@ -1922,8 +1922,8 @@ TEST(CApiTest, Indexing_Expr_With_float_Predicate_Term) {
     // gen query dataset
     auto query_dataset = knowhere::GenDataset(num_queries, DIM, query_ptr);
     auto result_on_index = indexing->Query(query_dataset, conf, nullptr);
-    auto ids = result_on_index->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis = result_on_index->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids = knowhere::GetDatasetIDs(result_on_index);
+    auto dis = knowhere::GetDatasetDistance(result_on_index);
     std::vector<int64_t> vec_ids(ids, ids + TOPK * num_queries);
     std::vector<float> vec_dis;
     for (int j = 0; j < TOPK * num_queries; ++j) {
@@ -2061,8 +2061,8 @@ TEST(CApiTest, Indexing_With_binary_Predicate_Range) {
     // gen query dataset
     auto query_dataset = knowhere::GenDataset(num_queries, DIM, query_ptr);
     auto result_on_index = indexing->Query(query_dataset, conf, nullptr);
-    auto ids = result_on_index->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis = result_on_index->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids = knowhere::GetDatasetIDs(result_on_index);
+    auto dis = knowhere::GetDatasetDistance(result_on_index);
     std::vector<int64_t> vec_ids(ids, ids + TOPK * num_queries);
     std::vector<float> vec_dis;
     for (int j = 0; j < TOPK * num_queries; ++j) {
@@ -2213,8 +2213,8 @@ TEST(CApiTest, Indexing_Expr_With_binary_Predicate_Range) {
     // gen query dataset
     auto query_dataset = knowhere::GenDataset(num_queries, DIM, query_ptr);
     auto result_on_index = indexing->Query(query_dataset, conf, nullptr);
-    auto ids = result_on_index->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis = result_on_index->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids = knowhere::GetDatasetIDs(result_on_index);
+    auto dis = knowhere::GetDatasetDistance(result_on_index);
     std::vector<int64_t> vec_ids(ids, ids + TOPK * num_queries);
     std::vector<float> vec_dis;
     for (int j = 0; j < TOPK * num_queries; ++j) {
@@ -2351,8 +2351,8 @@ TEST(CApiTest, Indexing_With_binary_Predicate_Term) {
     // gen query dataset
     auto query_dataset = knowhere::GenDataset(num_queries, DIM, query_ptr);
     auto result_on_index = indexing->Query(query_dataset, conf, nullptr);
-    auto ids = result_on_index->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis = result_on_index->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids = knowhere::GetDatasetIDs(result_on_index);
+    auto dis = knowhere::GetDatasetDistance(result_on_index);
     std::vector<int64_t> vec_ids(ids, ids + TOPK * num_queries);
     std::vector<float> vec_dis;
     for (int j = 0; j < TOPK * num_queries; ++j) {
@@ -2502,8 +2502,8 @@ TEST(CApiTest, Indexing_Expr_With_binary_Predicate_Term) {
     // gen query dataset
     auto query_dataset = knowhere::GenDataset(num_queries, DIM, query_ptr);
     auto result_on_index = indexing->Query(query_dataset, conf, nullptr);
-    auto ids = result_on_index->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis = result_on_index->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids = knowhere::GetDatasetIDs(result_on_index);
+    auto dis = knowhere::GetDatasetDistance(result_on_index);
     std::vector<int64_t> vec_ids(ids, ids + TOPK * num_queries);
     std::vector<float> vec_dis;
     for (int j = 0; j < TOPK * num_queries; ++j) {
@@ -2673,8 +2673,8 @@ TEST(CApiTest, SealedSegment_search_float_Predicate_Range) {
     // gen query dataset
     auto query_dataset = knowhere::GenDataset(num_queries, DIM, query_ptr);
     auto result_on_index = indexing->Query(query_dataset, conf, nullptr);
-    auto ids = result_on_index->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis = result_on_index->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids = knowhere::GetDatasetIDs(result_on_index);
+    auto dis = knowhere::GetDatasetDistance(result_on_index);
     std::vector<int64_t> vec_ids(ids, ids + TOPK * num_queries);
     std::vector<float> vec_dis;
     for (int j = 0; j < TOPK * num_queries; ++j) {
@@ -2702,8 +2702,8 @@ TEST(CApiTest, SealedSegment_search_float_Predicate_Range) {
     auto query_dataset2 = knowhere::GenDataset(num_queries, DIM, query_ptr);
     auto index = std::dynamic_pointer_cast<knowhere::VecIndex>(load_index_info->index);
     auto result_on_index2 = index->Query(query_dataset2, conf, nullptr);
-    auto ids2 = result_on_index2->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis2 = result_on_index2->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids2 = knowhere::GetDatasetIDs(result_on_index2);
+    auto dis2 = knowhere::GetDatasetDistance(result_on_index2);
 
     auto c_counter_field_data = CLoadFieldDataInfo{
         101,
@@ -2966,8 +2966,8 @@ TEST(CApiTest, SealedSegment_search_float_With_Expr_Predicate_Range) {
     // gen query dataset
     auto query_dataset = knowhere::GenDataset(num_queries, DIM, query_ptr);
     auto result_on_index = indexing->Query(query_dataset, conf, nullptr);
-    auto ids = result_on_index->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis = result_on_index->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids = knowhere::GetDatasetIDs(result_on_index);
+    auto dis = knowhere::GetDatasetDistance(result_on_index);
     std::vector<int64_t> vec_ids(ids, ids + TOPK * num_queries);
     std::vector<float> vec_dis;
     for (int j = 0; j < TOPK * num_queries; ++j) {
@@ -2995,8 +2995,8 @@ TEST(CApiTest, SealedSegment_search_float_With_Expr_Predicate_Range) {
     auto query_dataset2 = knowhere::GenDataset(num_queries, DIM, query_ptr);
     auto index = std::dynamic_pointer_cast<knowhere::VecIndex>(load_index_info->index);
     auto result_on_index2 = index->Query(query_dataset2, conf, nullptr);
-    auto ids2 = result_on_index2->Get<int64_t*>(knowhere::meta::IDS);
-    auto dis2 = result_on_index2->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids2 = knowhere::GetDatasetIDs(result_on_index2);
+    auto dis2 = knowhere::GetDatasetDistance(result_on_index2);
 
     auto c_counter_field_data = CLoadFieldDataInfo{
         101,
