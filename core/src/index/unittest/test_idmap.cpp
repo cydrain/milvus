@@ -11,8 +11,6 @@
 
 #include <gtest/gtest.h>
 
-#include <fiu-control.h>
-#include <fiu-local.h>
 #include <iostream>
 #include <thread>
 
@@ -214,11 +212,6 @@ TEST_P(IDMAPTest, idmap_copy) {
         ReleaseQueryResult(clone_result);
         ASSERT_THROW({ std::static_pointer_cast<milvus::knowhere::GPUIDMAP>(clone_index)->GetRawVectors(); },
                      milvus::knowhere::KnowhereException);
-
-        fiu_init(0);
-        fiu_enable("GPUIDMP.SerializeImpl.throw_exception", 1, nullptr, 0);
-        ASSERT_ANY_THROW(clone_index->Serialize());
-        fiu_disable("GPUIDMP.SerializeImpl.throw_exception");
 
         auto binary = clone_index->Serialize();
         clone_index->Load(binary);

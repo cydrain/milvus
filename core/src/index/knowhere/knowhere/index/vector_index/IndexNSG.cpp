@@ -9,7 +9,6 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License
 
-#include <fiu-local.h>
 #include <string>
 
 #include "knowhere/common/Exception.h"
@@ -38,7 +37,6 @@ NSG::Serialize(const Config& config) {
     }
 
     try {
-        fiu_do_on("NSG.Serialize.throw_exception", throw std::exception());
         impl::NsgIndex* index = index_.get();
 
         MemoryIOWriter writer;
@@ -56,7 +54,6 @@ NSG::Serialize(const Config& config) {
 void
 NSG::Load(const BinarySet& index_binary) {
     try {
-        fiu_do_on("NSG.Load.throw_exception", throw std::exception());
         auto binary = index_binary.GetByName("NSG");
 
         MemoryIOReader reader;

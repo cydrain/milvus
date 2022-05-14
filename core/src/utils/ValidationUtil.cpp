@@ -27,7 +27,6 @@
 
 #endif
 
-#include <fiu-local.h>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -364,7 +363,6 @@ ValidationUtil::ValidateVectorData(const engine::VectorsData& vectors,
         }
     } else {
         // check prepared float data
-        fiu_do_on("SearchRequest.OnExecute.invalod_rowrecord_array", vector_count = vectors.float_data_.size() + 1);
         if (vectors.float_data_.size() % vector_count != 0) {
             return Status(SERVER_INVALID_ROWRECORD_ARRAY,
                           "The vector dimension must be equal to the collection dimension.");
@@ -513,7 +511,6 @@ ValidationUtil::ValidateGpuIndex(int32_t gpu_index) {
 #ifdef MILVUS_GPU_VERSION
     int num_devices = 0;
     auto cuda_err = cudaGetDeviceCount(&num_devices);
-    fiu_do_on("ValidationUtil.ValidateGpuIndex.get_device_count_fail", cuda_err = cudaError::cudaErrorUnknown);
 
     if (cuda_err != cudaSuccess) {
         std::string msg = "Failed to get gpu card number, cuda error:" + std::to_string(cuda_err);
@@ -535,7 +532,6 @@ ValidationUtil::ValidateGpuIndex(int32_t gpu_index) {
 
 Status
 ValidationUtil::GetGpuMemory(int32_t gpu_index, int64_t& memory) {
-    fiu_return_on("ValidationUtil.GetGpuMemory.return_error", Status(SERVER_UNEXPECTED_ERROR, ""));
 
     cudaDeviceProp deviceProp;
     auto cuda_err = cudaGetDeviceProperties(&deviceProp, gpu_index);
@@ -557,7 +553,6 @@ ValidationUtil::ValidateIpAddress(const std::string& ip_address) {
     struct in_addr address;
 
     int result = inet_pton(AF_INET, ip_address.c_str(), &address);
-    fiu_do_on("ValidationUtil.ValidateIpAddress.error_ip_result", result = 2);
 
     switch (result) {
         case 1:
@@ -578,7 +573,6 @@ ValidationUtil::ValidateIpAddress(const std::string& ip_address) {
 Status
 ValidationUtil::ValidateHostname(const std::string& hostname) {
     struct hostent* hent = gethostbyname(hostname.c_str());
-    fiu_do_on("ValidationUtil.ValidateHostname.invalid_hostname", hent = nullptr);
     if (!hent) {
         std::string msg = "Unresolvable hostname: " + hostname;
         LOG_SERVER_ERROR_ << msg;
@@ -594,7 +588,6 @@ ValidationUtil::ValidateStringIsNumber(const std::string& str) {
     }
     try {
         int64_t value = std::stol(str);
-        fiu_do_on("ValidationUtil.ValidateStringIsNumber.throw_exception", throw std::exception());
         if (value < 0) {
             return Status(SERVER_INVALID_ARGUMENT, "Negative number");
         }
@@ -606,7 +599,6 @@ ValidationUtil::ValidateStringIsNumber(const std::string& str) {
 
 Status
 ValidationUtil::ValidateStringIsBool(const std::string& str) {
-    fiu_return_on("ValidateStringNotBool", Status(SERVER_INVALID_ARGUMENT, "Invalid boolean: " + str));
     std::string s = str;
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
     if (s == "true" || s == "on" || s == "yes" || s == "1" || s == "false" || s == "off" || s == "no" || s == "0" ||

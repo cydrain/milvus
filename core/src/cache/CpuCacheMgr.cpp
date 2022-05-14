@@ -13,8 +13,6 @@
 
 #include <utility>
 
-#include <fiu-local.h>
-
 #include "config/Config.h"
 #include "utils/Log.h"
 

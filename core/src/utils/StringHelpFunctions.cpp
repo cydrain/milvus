@@ -11,7 +11,6 @@
 
 #include "utils/StringHelpFunctions.h"
 
-#include <fiu-local.h>
 #include <algorithm>
 #include <regex>
 #include <string>
@@ -102,7 +101,6 @@ StringHelpFunctions::SplitStringByQuote(const std::string& str, const std::strin
         last = index + 1;
         std::string postfix = process_str.substr(last);
         index = postfix.find_first_of(quote, 0);
-        fiu_do_on("StringHelpFunctions.SplitStringByQuote.invalid_index", index = std::string::npos);
 
         if (index == std::string::npos) {
             return Status(SERVER_UNEXPECTED_ERROR, "");
@@ -112,8 +110,6 @@ StringHelpFunctions::SplitStringByQuote(const std::string& str, const std::strin
 
         last = index + 1;
         index = postfix.find_first_of(delimeter, last);
-        fiu_do_on("StringHelpFunctions.SplitStringByQuote.index_gt_last", last = 0);
-        fiu_do_on("StringHelpFunctions.SplitStringByQuote.invalid_index2", index = std::string::npos);
 
         if (index != std::string::npos) {
             if (index > last) {
@@ -123,7 +119,6 @@ StringHelpFunctions::SplitStringByQuote(const std::string& str, const std::strin
             append_prefix += postfix.substr(last);
         }
         result.emplace_back(append_prefix);
-        fiu_do_on("StringHelpFunctions.SplitStringByQuote.last_is_end", last = postfix.length());
 
         if (last == postfix.length()) {
             return Status::OK();

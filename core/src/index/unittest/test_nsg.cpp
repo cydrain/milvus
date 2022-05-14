@@ -9,8 +9,6 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
-#include <fiu-control.h>
-#include <fiu-local.h>
 #include <gtest/gtest.h>
 #include <memory>
 
@@ -77,7 +75,6 @@ class NSGInterfaceTest : public DataGen, public ::testing::Test {
 
 TEST_F(NSGInterfaceTest, basic_test) {
     assert(!xb.empty());
-    fiu_init(0);
     // untrained index
     {
         ASSERT_ANY_THROW(index_->Serialize());
@@ -93,9 +90,7 @@ TEST_F(NSGInterfaceTest, basic_test) {
 
     auto binaryset = index_->Serialize();
     {
-        fiu_enable("NSG.Serialize.throw_exception", 1, nullptr, 0);
         ASSERT_ANY_THROW(index_->Serialize());
-        fiu_disable("NSG.Serialize.throw_exception");
     }
 
     /* test NSG GPU train */
@@ -110,9 +105,7 @@ TEST_F(NSGInterfaceTest, basic_test) {
     auto new_index_2 = std::make_shared<milvus::knowhere::NSG>();
     new_index_2->Load(binaryset);
     {
-        fiu_enable("NSG.Load.throw_exception", 1, nullptr, 0);
         ASSERT_ANY_THROW(new_index_2->Load(binaryset));
-        fiu_disable("NSG.Load.throw_exception");
     }
 
     auto new_result_2 = new_index_2->Query(query_dataset, search_conf, nullptr);

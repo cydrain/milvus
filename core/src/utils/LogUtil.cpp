@@ -11,7 +11,6 @@
 
 #include "utils/LogUtil.h"
 
-#include <fiu-local.h>
 #include <libgen.h>
 #include <cctype>
 #include <string>
@@ -143,50 +142,42 @@ InitLog(bool trace_enable, bool debug_enable, bool info_enable, bool warning_ena
     }
     defaultConf.set(el::Level::Global, el::ConfigurationType::Enabled, str_true);
 
-    fiu_do_on("LogUtil.InitLog.info_enable_to_false", info_enable = false);
     if (log_to_file && info_enable) {
         std::string info_log_path = logs_reg_path + "milvus-%datetime{%y-%M-%d-%H:%m}-info.log";
         defaultConf.set(el::Level::Info, el::ConfigurationType::Filename, info_log_path.c_str());
     }
     defaultConf.set(el::Level::Info, el::ConfigurationType::Enabled, boolen_to_string(info_enable));
 
-    fiu_do_on("LogUtil.InitLog.debug_enable_to_false", debug_enable = false);
     if (log_to_file && debug_enable) {
         std::string debug_log_path = logs_reg_path + "milvus-%datetime{%y-%M-%d-%H:%m}-debug.log";
         defaultConf.set(el::Level::Debug, el::ConfigurationType::Filename, debug_log_path.c_str());
     }
     defaultConf.set(el::Level::Debug, el::ConfigurationType::Enabled, boolen_to_string(debug_enable));
 
-    fiu_do_on("LogUtil.InitLog.warning_enable_to_false", warning_enable = false);
     if (log_to_file && warning_enable) {
         std::string warning_log_path = logs_reg_path + "milvus-%datetime{%y-%M-%d-%H:%m}-warning.log";
         defaultConf.set(el::Level::Warning, el::ConfigurationType::Filename, warning_log_path.c_str());
     }
     defaultConf.set(el::Level::Warning, el::ConfigurationType::Enabled, boolen_to_string(warning_enable));
 
-    fiu_do_on("LogUtil.InitLog.trace_enable_to_false", trace_enable = false);
     if (log_to_file && trace_enable) {
         std::string trace_log_path = logs_reg_path + "milvus-%datetime{%y-%M-%d-%H:%m}-trace.log";
         defaultConf.set(el::Level::Trace, el::ConfigurationType::Filename, trace_log_path.c_str());
     }
     defaultConf.set(el::Level::Trace, el::ConfigurationType::Enabled, boolen_to_string(trace_enable));
 
-    fiu_do_on("LogUtil.InitLog.error_enable_to_false", error_enable = false);
     if (log_to_file && error_enable) {
         std::string error_log_path = logs_reg_path + "milvus-%datetime{%y-%M-%d-%H:%m}-error.log";
         defaultConf.set(el::Level::Error, el::ConfigurationType::Filename, error_log_path.c_str());
     }
     defaultConf.set(el::Level::Error, el::ConfigurationType::Enabled, boolen_to_string(error_enable));
 
-    fiu_do_on("LogUtil.InitLog.fatal_enable_to_false", fatal_enable = false);
     if (log_to_file && fatal_enable) {
         std::string fatal_log_path = logs_reg_path + "milvus-%datetime{%y-%M-%d-%H:%m}-fatal.log";
         defaultConf.set(el::Level::Fatal, el::ConfigurationType::Filename, fatal_log_path.c_str());
     }
     defaultConf.set(el::Level::Fatal, el::ConfigurationType::Enabled, boolen_to_string(fatal_enable));
 
-    fiu_do_on("LogUtil.InitLog.set_max_log_size_small_than_min",
-              max_log_file_size = CONFIG_LOGS_MAX_LOG_FILE_SIZE_MIN - 1);
     if (max_log_file_size < CONFIG_LOGS_MAX_LOG_FILE_SIZE_MIN ||
         max_log_file_size > CONFIG_LOGS_MAX_LOG_FILE_SIZE_MAX) {
         return Status(SERVER_UNEXPECTED_ERROR, "max_log_file_size must in range[" +
@@ -201,7 +192,6 @@ InitLog(bool trace_enable, bool debug_enable, bool info_enable, bool warning_ena
 
     // set delete_exceeds = 0 means disable throw away log file even they reach certain limit.
     if (delete_exceeds != 0) {
-        fiu_do_on("LogUtil.InitLog.delete_exceeds_small_than_min", delete_exceeds = CONFIG_LOGS_LOG_ROTATE_NUM_MIN - 1);
         if (delete_exceeds < CONFIG_LOGS_LOG_ROTATE_NUM_MIN || delete_exceeds > CONFIG_LOGS_LOG_ROTATE_NUM_MAX) {
             return Status(SERVER_UNEXPECTED_ERROR, "delete_exceeds must in range[" +
                                                        std::to_string(CONFIG_LOGS_LOG_ROTATE_NUM_MIN) + ", " +

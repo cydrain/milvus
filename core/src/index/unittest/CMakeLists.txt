@@ -5,7 +5,7 @@ include_directories(${INDEX_SOURCE_DIR})
 
 set(depend_libs
         gtest gmock gtest_main gmock_main
-        faiss fiu
+        faiss
         )
 if (FAISS_WITH_MKL)
     set(depend_libs ${depend_libs}
