@@ -18,7 +18,7 @@
 
 #include <faiss/gpu/StandardGpuResources.h>
 
-#include "src/utils/BlockingQueue.h"
+#include "knowhere/utils/BlockingQueue.h"
 
 namespace milvus {
 namespace knowhere {
