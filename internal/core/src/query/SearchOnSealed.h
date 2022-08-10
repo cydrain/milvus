@@ -37,4 +37,23 @@ SearchOnSealed(const Schema& schema,
                const BitsetView& bitset,
                SearchResult& result);
 
+void
+RangeSearchOnSealedIndex(const Schema& schema,
+                         const segcore::SealedIndexingRecord& record,
+                         const SearchInfo& search_info,
+                         const void* query_data,
+                         int64_t num_queries,
+                         const BitsetView& view,
+                         SearchResult& result);
+
+void
+RangeSearchOnSealed(const Schema& schema,
+                    const segcore::InsertRecord& record,
+                    const SearchInfo& search_info,
+                    const void* query_data,
+                    int64_t num_queries,
+                    int64_t row_count,
+                    const BitsetView& view,
+                    SearchResult& result);
+
 }  // namespace milvus::query

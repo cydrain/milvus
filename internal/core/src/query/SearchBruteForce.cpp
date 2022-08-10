@@ -13,7 +13,9 @@
 #include <vector>
 
 #include "SearchBruteForce.h"
+#include "SubRangeSearchResult.h"
 #include "SubSearchResult.h"
+#include "log/Log.h"
 #include "knowhere/archive/BruteForce.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 
@@ -24,6 +26,7 @@ BruteForceSearch(const dataset::SearchDataset& dataset,
                  const void* chunk_data_raw,
                  int64_t chunk_rows,
                  const BitsetView& bitset) {
+    LOG_SEGCORE_DEBUG_ << "CYD - BruteForceSearch";
     SubSearchResult sub_result(dataset.num_queries, dataset.topk, dataset.metric_type, dataset.round_decimal);
     try {
         auto nq = dataset.num_queries;
@@ -44,6 +47,43 @@ BruteForceSearch(const dataset::SearchDataset& dataset,
 
         std::copy_n(knowhere::GetDatasetIDs(result), nq * topk, sub_result.get_seg_offsets());
         std::copy_n(knowhere::GetDatasetDistance(result), nq * topk, sub_result.get_distances());
+    } catch (std::exception& e) {
+        PanicInfo(e.what());
+    }
+    sub_result.round_values();
+    return sub_result;
+}
+
+SubRangeSearchResult
+BruteForceRangeSearch(const dataset::RangeSearchDataset& dataset,
+                      const void* chunk_data_raw,
+                      int64_t chunk_rows,
+                      const BitsetView& bitset) {
+    LOG_SEGCORE_DEBUG_ << "CYD - BruteForceRangeSearch";
+    SubRangeSearchResult sub_result(dataset.num_queries, dataset.radius, dataset.metric_type, dataset.round_decimal);
+    try {
+        auto nq = dataset.num_queries;
+        auto dim = dataset.dim;
+        auto radius = dataset.radius;
+
+        auto base_dataset = knowhere::GenDataset(chunk_rows, dim, chunk_data_raw);
+        auto query_dataset = knowhere::GenDataset(nq, dim, dataset.query_data);
+        auto config = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, dataset.metric_type},
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::RADIUS, radius},
+        };
+        auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
+        auto lims = knowhere::GetDatasetLims(result);
+        auto total_num = lims[nq];
+
+        sub_result.mutable_lims().resize(nq + 1);
+        sub_result.mutable_seg_offsets().resize(total_num);
+        sub_result.mutable_distances().resize(total_num);
+
+        std::copy_n(knowhere::GetDatasetIDs(result), total_num, sub_result.get_seg_offsets());
+        std::copy_n(knowhere::GetDatasetDistance(result), total_num, sub_result.get_distances());
+        std::copy_n(knowhere::GetDatasetLims(result), nq + 1, sub_result.get_lims());
     } catch (std::exception& e) {
         PanicInfo(e.what());
     }

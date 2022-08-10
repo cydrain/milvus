@@ -183,11 +183,21 @@ SegmentGrowingImpl::vector_search(query::SearchInfo& search_info,
                                   const BitsetView& bitset,
                                   SearchResult& output) const {
     auto& sealed_indexing = this->get_sealed_indexing_record();
+    bool has_radius = knowhere::CheckKeyInConfig(search_info.search_params_, knowhere::meta::RADIUS);
     if (sealed_indexing.is_ready(search_info.field_id_)) {
-        query::SearchOnSealedIndex(this->get_schema(), sealed_indexing, search_info, query_data, query_count, bitset,
-                                   output);
+        if (has_radius) {
+            query::RangeSearchOnSealedIndex(this->get_schema(), sealed_indexing, search_info, query_data, query_count,
+                                            bitset, output);
+        } else {
+            query::SearchOnSealedIndex(this->get_schema(), sealed_indexing, search_info, query_data, query_count,
+                                       bitset, output);
+        }
     } else {
-        query::SearchOnGrowing(*this, search_info, query_data, query_count, timestamp, bitset, output);
+        if (has_radius) {
+            query::RangeSearchOnGrowing(*this, search_info, query_data, query_count, timestamp, bitset, output);
+        } else {
+            query::SearchOnGrowing(*this, search_info, query_data, query_count, timestamp, bitset, output);
+        }
     }
 }
 
