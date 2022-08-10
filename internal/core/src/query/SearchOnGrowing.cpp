@@ -9,10 +9,12 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License
 
-#include "common/BitsetView.h"
 #include "SearchOnGrowing.h"
+#include "common/BitsetView.h"
+#include "log/Log.h"
 #include "query/SearchBruteForce.h"
 #include "query/SearchOnIndex.h"
+#include "query/SubRangeSearchResult.h"
 
 namespace milvus::query {
 
@@ -132,6 +134,68 @@ SearchOnGrowing(const segcore::SegmentGrowingImpl& segment,
     results.distances_ = std::move(final_qr.mutable_distances());
     results.seg_offsets_ = std::move(final_qr.mutable_seg_offsets());
     results.unity_topK_ = topk;
+    results.total_nq_ = num_queries;
+}
+
+void
+RangeSearchOnGrowing(const segcore::SegmentGrowingImpl& segment,
+                     const query::SearchInfo& info,
+                     const void* query_data,
+                     int64_t num_queries,
+                     Timestamp timestamp,
+                     const BitsetView& bitset,
+                     SearchResult& results) {
+    LOG_SEGCORE_DEBUG_ << "CYD - RangeSearchOnGrowing";
+    auto& schema = segment.get_schema();
+    auto& indexing_record = segment.get_indexing_record();
+    auto& record = segment.get_insert_record();
+    auto active_count = segment.get_active_count(timestamp);
+
+    // step 1.1: get meta
+    // step 1.2: get which vector field to search
+    auto vecfield_id = info.field_id_;
+    auto& field = schema[vecfield_id];
+    auto data_type = field.get_data_type();
+    AssertInfo(datatype_is_vector(data_type), "[RangeSearchOnGrowing]Data type isn't vector type");
+
+    AssertInfo(knowhere::CheckKeyInConfig(info.search_params_, knowhere::meta::RADIUS),
+               "[RangeSearchOnGrowing] Radius not set");
+    auto radius = knowhere::GetMetaRadius(info.search_params_);
+    auto dim = field.get_dim();
+    auto metric_type = info.metric_type_;
+    auto round_decimal = info.round_decimal_;
+
+    // step 2: small indexing search
+    SubRangeSearchResult final_qr(num_queries, radius, metric_type, round_decimal);
+    dataset::RangeSearchDataset range_search_dataset{metric_type, num_queries, radius, round_decimal, dim, query_data};
+
+    // step 3: brute force search where small indexing is unavailable
+    auto vec_ptr = record.get_field_data_base(vecfield_id);
+    auto vec_size_per_chunk = vec_ptr->get_size_per_chunk();
+    auto max_chunk = upper_div(active_count, vec_size_per_chunk);
+
+    for (int chunk_id = 0; chunk_id < max_chunk; ++chunk_id) {
+        auto chunk_data = vec_ptr->get_chunk_data(chunk_id);
+
+        auto element_begin = chunk_id * vec_size_per_chunk;
+        auto element_end = std::min(active_count, (chunk_id + 1) * vec_size_per_chunk);
+        auto size_per_chunk = element_end - element_begin;
+
+        auto sub_view = bitset.subview(element_begin, size_per_chunk);
+        auto sub_qr = BruteForceRangeSearch(range_search_dataset, chunk_data, size_per_chunk, sub_view);
+
+        // convert chunk uid to segment uid
+        for (auto& x : sub_qr.mutable_seg_offsets()) {
+            if (x != -1) {
+                x += chunk_id * vec_size_per_chunk;
+            }
+        }
+        final_qr.merge(sub_qr);
+    }
+    results.distances_ = std::move(final_qr.mutable_distances());
+    results.seg_offsets_ = std::move(final_qr.mutable_seg_offsets());
+    results.topk_per_nq_prefix_sum_ = std::move(final_qr.mutable_lims());
+    results.radius_ = radius;
     results.total_nq_ = num_queries;
 }
 

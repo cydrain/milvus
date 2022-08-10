@@ -11,6 +11,7 @@
 
 #include <cmath>
 
+#include "log/Log.h"
 #include "knowhere/index/VecIndex.h"
 #include "knowhere/index/vector_index/ConfAdapter.h"
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
@@ -100,6 +101,100 @@ SearchOnSealed(const Schema& schema,
     result.distances_ = std::move(sub_qr.mutable_distances());
     result.seg_offsets_ = std::move(sub_qr.mutable_seg_offsets());
     result.unity_topK_ = dataset.topk;
+    result.total_nq_ = dataset.num_queries;
+}
+
+void
+RangeSearchOnSealedIndex(const Schema& schema,
+                         const segcore::SealedIndexingRecord& record,
+                         const SearchInfo& search_info,
+                         const void* query_data,
+                         int64_t num_queries,
+                         const BitsetView& bitset,
+                         SearchResult& result) {
+    LOG_SEGCORE_DEBUG_ << "CYD - RangeSearchOnSealedIndex";
+    AssertInfo(knowhere::CheckKeyInConfig(search_info.search_params_, knowhere::meta::RADIUS),
+               "[RangeSearchOnSealedIndex] Radius not set");
+    auto radius = knowhere::GetMetaRadius(search_info.search_params_);
+    auto round_decimal = search_info.round_decimal_;
+
+    auto field_id = search_info.field_id_;
+    auto& field = schema[field_id];
+    auto dim = field.get_dim();
+
+    AssertInfo(record.is_ready(field_id), "[SearchOnSealed]Record isn't ready");
+    auto field_indexing = record.get_field_indexing(field_id);
+    AssertInfo(field_indexing->metric_type_ == search_info.metric_type_,
+               "Metric type of field index isn't the same with search info");
+
+    auto final = [&] {
+        auto ds = knowhere::GenDataset(num_queries, dim, query_data);
+
+        auto conf = search_info.search_params_;
+        knowhere::SetMetaRadius(conf, radius);
+        knowhere::SetMetaMetricType(conf, field_indexing->metric_type_);
+        auto index_type = field_indexing->indexing_->index_type();
+        auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type);
+        try {
+            adapter->CheckRangeSearch(conf, index_type, field_indexing->indexing_->index_mode());
+        } catch (std::exception& e) {
+            AssertInfo(false, e.what());
+        }
+        return field_indexing->indexing_->QueryByRange(ds, conf, bitset);
+    }();
+
+    auto ids = knowhere::GetDatasetIDs(final);
+    float* distances = (float*)knowhere::GetDatasetDistance(final);
+    auto lims = knowhere::GetDatasetLims(final);
+
+    auto total_num = lims[num_queries];
+
+    const float multiplier = pow(10.0, round_decimal);
+    if (round_decimal != -1) {
+        const float multiplier = pow(10.0, round_decimal);
+        for (int i = 0; i < total_num; i++) {
+            distances[i] = round(distances[i] * multiplier) / multiplier;
+        }
+    }
+    result.seg_offsets_.resize(total_num);
+    result.distances_.resize(total_num);
+    result.topk_per_nq_prefix_sum_.resize(num_queries + 1);
+    result.total_nq_ = num_queries;
+    result.radius_ = radius;
+
+    std::copy_n(ids, total_num, result.seg_offsets_.data());
+    std::copy_n(distances, total_num, result.distances_.data());
+    std::copy_n(lims, num_queries + 1, result.topk_per_nq_prefix_sum_.data());
+}
+
+void
+RangeSearchOnSealed(const Schema& schema,
+                    const segcore::InsertRecord& record,
+                    const SearchInfo& search_info,
+                    const void* query_data,
+                    int64_t num_queries,
+                    int64_t row_count,
+                    const BitsetView& bitset,
+                    SearchResult& result) {
+    LOG_SEGCORE_DEBUG_ << "CYD - RangeSearchOnSealed";
+    auto field_id = search_info.field_id_;
+    auto& field = schema[field_id];
+
+    AssertInfo(knowhere::CheckKeyInConfig(search_info.search_params_, knowhere::meta::RADIUS),
+               "[RangeSearchOnSealed] Radius not set");
+    auto radius = knowhere::GetMetaRadius(search_info.search_params_);
+
+    query::dataset::RangeSearchDataset dataset{search_info.metric_type_,   num_queries,     radius,
+                                               search_info.round_decimal_, field.get_dim(), query_data};
+    auto vec_data = record.get_field_data_base(field_id);
+    AssertInfo(vec_data->num_chunk() == 1, "num chunk not equal to 1 for sealed segment");
+    auto chunk_data = vec_data->get_chunk_data(0);
+    auto sub_qr = query::BruteForceRangeSearch(dataset, chunk_data, row_count, bitset);
+
+    result.distances_ = std::move(sub_qr.mutable_distances());
+    result.seg_offsets_ = std::move(sub_qr.mutable_seg_offsets());
+    result.topk_per_nq_prefix_sum_ = std::move(sub_qr.mutable_lims());
+    result.radius_ = radius;
     result.total_nq_ = dataset.num_queries;
 }
 

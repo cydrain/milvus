@@ -25,4 +25,13 @@ SearchOnGrowing(const segcore::SegmentGrowingImpl& segment,
                 const BitsetView& bitset,
                 SearchResult& results);
 
+void
+RangeSearchOnGrowing(const segcore::SegmentGrowingImpl& segment,
+                     const query::SearchInfo& info,
+                     const void* query_data,
+                     int64_t num_queries,
+                     Timestamp timestamp,
+                     const BitsetView& bitset,
+                     SearchResult& results);
+
 }  // namespace milvus::query

@@ -12,6 +12,7 @@
 #pragma once
 
 #include "common/BitsetView.h"
+#include "query/SubRangeSearchResult.h"
 #include "query/SubSearchResult.h"
 #include "query/helper.h"
 
@@ -22,5 +23,11 @@ BruteForceSearch(const dataset::SearchDataset& dataset,
                  const void* chunk_data_raw,
                  int64_t chunk_rows,
                  const BitsetView& bitset);
+
+SubRangeSearchResult
+BruteForceRangeSearch(const dataset::RangeSearchDataset& dataset,
+                      const void* chunk_data_raw,
+                      int64_t chunk_rows,
+                      const BitsetView& bitset);
 
 }  // namespace milvus::query

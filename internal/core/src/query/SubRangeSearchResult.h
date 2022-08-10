@@ -18,43 +18,27 @@
 
 namespace milvus::query {
 
-class SubSearchResult {
+class SubRangeSearchResult {
  public:
-    SubSearchResult(const int64_t num_queries,
-                    const int64_t topk,
-                    const knowhere::MetricType& metric_type,
-                    const int64_t round_decimal)
+    SubRangeSearchResult(const int64_t num_queries,
+                         const float radius,
+                         const knowhere::MetricType& metric_type,
+                         const int64_t round_decimal)
         : num_queries_(num_queries),
-          topk_(topk),
+          radius_(radius),
           round_decimal_(round_decimal),
           metric_type_(metric_type),
-          seg_offsets_(num_queries * topk, -1),
-          distances_(num_queries * topk, init_value(metric_type)) {
+          lims_(num_queries + 1, 0) {
     }
 
-    SubSearchResult(SubSearchResult&& other)
+    SubRangeSearchResult(SubRangeSearchResult&& other)
         : num_queries_(other.num_queries_),
-          topk_(other.topk_),
+          radius_(other.radius_),
           round_decimal_(other.round_decimal_),
           metric_type_(other.metric_type_),
           seg_offsets_(std::move(other.seg_offsets_)),
-          distances_(std::move(other.distances_)) {
-    }
-
- public:
-    static float
-    init_value(const knowhere::MetricType& metric_type) {
-        return (is_descending(metric_type) ? -1 : 1) * std::numeric_limits<float>::max();
-    }
-
-    static bool
-    is_descending(const knowhere::MetricType& metric_type) {
-        // TODO(dog): more types
-        if (metric_type == knowhere::metric::IP) {
-            return true;
-        } else {
-            return false;
-        }
+          distances_(std::move(other.distances_)),
+          lims_(std::move(other.lims_)) {
     }
 
  public:
@@ -63,13 +47,13 @@ class SubSearchResult {
         return num_queries_;
     }
 
-    int64_t
-    get_topk() const {
-        return topk_;
+    float
+    get_radius() const {
+        return radius_;
     }
 
     const int64_t*
-    get_ids() const {
+    get_seg_offsets() const {
         return seg_offsets_.data();
     }
 
@@ -88,6 +72,16 @@ class SubSearchResult {
         return distances_.data();
     }
 
+    const size_t*
+    get_lims() const {
+        return lims_.data();
+    }
+
+    size_t*
+    get_lims() {
+        return lims_.data();
+    }
+
     auto&
     mutable_seg_offsets() {
         return seg_offsets_;
@@ -98,24 +92,30 @@ class SubSearchResult {
         return distances_;
     }
 
+    auto&
+    mutable_lims() {
+        return lims_;
+    }
+
+    bool
+    empty() const {
+        return lims_.back() == 0;
+    }
+
     void
     round_values();
 
     void
-    merge(const SubSearchResult& sub_result);
-
- private:
-    template <bool is_desc>
-    void
-    merge_impl(const SubSearchResult& sub_result);
+    merge(const SubRangeSearchResult& sub_result);
 
  private:
     int64_t num_queries_;
-    int64_t topk_;
+    float radius_;
     int64_t round_decimal_;
     knowhere::MetricType metric_type_;
     std::vector<int64_t> seg_offsets_;
     std::vector<float> distances_;
+    std::vector<size_t> lims_;
 };
 
 }  // namespace milvus::query

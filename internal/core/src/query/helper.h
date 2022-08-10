@@ -29,5 +29,14 @@ struct SearchDataset {
     const void* query_data;
 };
 
+struct RangeSearchDataset {
+    knowhere::MetricType metric_type;
+    int64_t num_queries;
+    float radius;
+    int64_t round_decimal;
+    int64_t dim;
+    const void* query_data;
+};
+
 }  // namespace dataset
 }  // namespace milvus::query

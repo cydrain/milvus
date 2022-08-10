@@ -360,17 +360,29 @@ SegmentSealedImpl::vector_search(query::SearchInfo& search_info,
     auto& field_meta = schema_->operator[](field_id);
 
     AssertInfo(field_meta.is_vector(), "The meta type of vector field is not vector type");
+    bool has_radius = knowhere::CheckKeyInConfig(search_info.search_params_, knowhere::meta::RADIUS);
     if (get_bit(index_ready_bitset_, field_id)) {
         AssertInfo(vector_indexings_.is_ready(field_id),
                    "vector indexes isn't ready for field " + std::to_string(field_id.get()));
-        query::SearchOnSealedIndex(*schema_, vector_indexings_, search_info, query_data, query_count, bitset, output);
+        if (has_radius) {
+            query::RangeSearchOnSealedIndex(*schema_, vector_indexings_, search_info, query_data, query_count, bitset,
+                                            output);
+        } else {
+            query::SearchOnSealedIndex(*schema_, vector_indexings_, search_info, query_data, query_count, bitset,
+                                       output);
+        }
     } else {
         AssertInfo(get_bit(field_data_ready_bitset_, field_id),
                    "Field Data is not loaded: " + std::to_string(field_id.get()));
         AssertInfo(row_count_opt_.has_value(), "Can't get row count value");
         auto row_count = row_count_opt_.value();
-        query::SearchOnSealed(*schema_, insert_record_, search_info, query_data, query_count, row_count, bitset,
-                              output);
+        if (has_radius) {
+            query::RangeSearchOnSealed(*schema_, insert_record_, search_info, query_data, query_count, row_count,
+                                       bitset, output);
+        } else {
+            query::SearchOnSealed(*schema_, insert_record_, search_info, query_data, query_count, row_count, bitset,
+                                  output);
+        }
     }
 }
 
