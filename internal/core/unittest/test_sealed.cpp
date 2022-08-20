@@ -31,7 +31,7 @@ TEST(Sealed, without_predicate) {
     auto schema = std::make_shared<Schema>();
     auto dim = 16;
     auto topK = 5;
-    auto metric_type = MetricType::METRIC_L2;
+    auto metric_type = knowhere::metric::L2;
     auto fake_id = schema->AddDebugField("fakevec", DataType::VECTOR_FLOAT, dim, metric_type);
     auto float_fid = schema->AddDebugField("age", DataType::FLOAT);
     auto i64_fid = schema->AddDebugField("counter", DataType::INT64);
@@ -138,7 +138,7 @@ TEST(Sealed, with_predicate) {
     auto schema = std::make_shared<Schema>();
     auto dim = 16;
     auto topK = 5;
-    auto metric_type = MetricType::METRIC_L2;
+    auto metric_type = knowhere::metric::L2;
     auto fake_id = schema->AddDebugField("fakevec", DataType::VECTOR_FLOAT, dim, metric_type);
     auto i64_fid = schema->AddDebugField("counter", DataType::INT64);
     schema->set_primary_field_id(i64_fid);
@@ -235,7 +235,7 @@ TEST(Sealed, with_predicate_filter_all) {
     auto schema = std::make_shared<Schema>();
     auto dim = 16;
     auto topK = 5;
-    auto metric_type = MetricType::METRIC_L2;
+    auto metric_type = knowhere::metric::L2;
     auto fake_id = schema->AddDebugField("fakevec", DataType::VECTOR_FLOAT, dim, metric_type);
     auto i64_fid = schema->AddDebugField("counter", DataType::INT64);
     schema->set_primary_field_id(i64_fid);
@@ -349,7 +349,7 @@ TEST(Sealed, LoadFieldData) {
     auto dim = 16;
     auto topK = 5;
     auto N = ROW_COUNT;
-    auto metric_type = MetricType::METRIC_L2;
+    auto metric_type = knowhere::metric::L2;
     auto schema = std::make_shared<Schema>();
     auto fakevec_id = schema->AddDebugField("fakevec", DataType::VECTOR_FLOAT, dim, metric_type);
     auto counter_id = schema->AddDebugField("counter", DataType::INT64);
@@ -470,7 +470,7 @@ TEST(Sealed, LoadFieldData) {
 TEST(Sealed, LoadScalarIndex) {
     auto dim = 16;
     auto N = ROW_COUNT;
-    auto metric_type = MetricType::METRIC_L2;
+    auto metric_type = knowhere::metric::L2;
     auto schema = std::make_shared<Schema>();
     auto fakevec_id = schema->AddDebugField("fakevec", DataType::VECTOR_FLOAT, dim, metric_type);
     auto counter_id = schema->AddDebugField("counter", DataType::INT64);
@@ -575,7 +575,7 @@ TEST(Sealed, Delete) {
     auto dim = 16;
     auto topK = 5;
     auto N = 10;
-    auto metric_type = MetricType::METRIC_L2;
+    auto metric_type = knowhere::metric::L2;
     auto schema = std::make_shared<Schema>();
     auto fakevec_id = schema->AddDebugField("fakevec", DataType::VECTOR_FLOAT, dim, metric_type);
     auto counter_id = schema->AddDebugField("counter", DataType::INT64);
@@ -695,7 +695,7 @@ transfer_to_fields_data(const std::vector<float>& vecs) {
 TEST(Sealed, BF) {
     auto schema = std::make_shared<Schema>();
     auto dim = 128;
-    auto metric_type = MetricType::METRIC_L2;
+    auto metric_type = knowhere::metric::L2;
     auto fake_id = schema->AddDebugField("fakevec", DataType::VECTOR_FLOAT, dim, metric_type);
     auto i64_fid = schema->AddDebugField("counter", DataType::INT64);
     schema->set_primary_field_id(i64_fid);
@@ -748,7 +748,7 @@ TEST(Sealed, BF) {
 TEST(Sealed, BF_Overflow) {
     auto schema = std::make_shared<Schema>();
     auto dim = 128;
-    auto metric_type = MetricType::METRIC_L2;
+    auto metric_type = knowhere::metric::L2;
     auto fake_id = schema->AddDebugField("fakevec", DataType::VECTOR_FLOAT, dim, metric_type);
     auto i64_fid = schema->AddDebugField("counter", DataType::INT64);
     schema->set_primary_field_id(i64_fid);

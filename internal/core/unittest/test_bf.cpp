@@ -24,7 +24,7 @@ using namespace milvus::query;
 namespace {
 
 auto
-GenFloatVecs(int dim, int n, const MetricType& metric, int seed = 42) {
+GenFloatVecs(int dim, int n, const knowhere::MetricType& metric, int seed = 42) {
     auto schema = std::make_shared<Schema>();
     auto fvec = schema->AddDebugField("fvec", DataType::VECTOR_FLOAT, dim, metric);
     auto dataset = DataGen(schema, n, seed);
@@ -37,14 +37,14 @@ Distances(const float* base,
           const float* query,  // one query.
           int nb,
           int dim,
-          const MetricType& metric) {
-    if (metric == MetricType::METRIC_L2) {
+          const knowhere::MetricType& metric) {
+    if (metric == knowhere::metric::L2) {
         std::vector<std::tuple<int, float>> res;
         for (int i = 0; i < nb; i++) {
             res.emplace_back(i, L2(base + i * dim, query, dim));
         }
         return res;
-    } else if (metric == MetricType::METRIC_INNER_PRODUCT) {
+    } else if (metric == knowhere::metric::IP) {
         std::vector<std::tuple<int, float>> res;
         for (int i = 0; i < nb; i++) {
             res.emplace_back(i, IP(base + i * dim, query, dim));
@@ -72,11 +72,11 @@ Ref(const float* base,
     int nb,
     int dim,
     int topk,
-    const MetricType& metric) {
+    const knowhere::MetricType& metric) {
     auto res = Distances(base, query, nb, dim, metric);
     std::sort(res.begin(), res.end());
-    if (metric == MetricType::METRIC_L2) {
-    } else if (metric == MetricType::METRIC_INNER_PRODUCT) {
+    if (metric == knowhere::metric::L2) {
+    } else if (metric == knowhere::metric::IP) {
         std::reverse(res.begin(), res.end());
     } else {
         PanicInfo("invalid metric type");
@@ -95,8 +95,8 @@ AssertMatch(const std::vector<int>& ref, const int64_t* ans) {
 }
 
 bool
-is_supported_float_metric(const MetricType& metric) {
-    return metric == MetricType::METRIC_L2 || metric == MetricType::METRIC_INNER_PRODUCT;
+is_supported_float_metric(const knowhere::MetricType& metric) {
+    return metric == knowhere::metric::L2 || metric == knowhere::metric::IP;
 }
 
 }  // namespace
@@ -104,7 +104,7 @@ is_supported_float_metric(const MetricType& metric) {
 class TestFloatSearchBruteForce : public ::testing::Test {
  public:
     void
-    Run(int nb, int nq, int topk, int dim, const MetricType& metric_type) {
+    Run(int nb, int nq, int topk, int dim, const knowhere::MetricType& metric_type) {
         auto bitset = std::make_shared<BitsetType>();
         bitset->resize(nb);
         auto bitset_view = BitsetView(*bitset);
@@ -127,13 +127,13 @@ class TestFloatSearchBruteForce : public ::testing::Test {
 };
 
 TEST_F(TestFloatSearchBruteForce, L2) {
-    Run(100, 10, 5, 128, MetricType::METRIC_L2);
+    Run(100, 10, 5, 128, knowhere::metric::L2);
 }
 
 TEST_F(TestFloatSearchBruteForce, IP) {
-    Run(100, 10, 5, 128, MetricType::METRIC_INNER_PRODUCT);
+    Run(100, 10, 5, 128, knowhere::metric::IP);
 }
 
 TEST_F(TestFloatSearchBruteForce, NotSupported) {
-    Run(100, 10, 5, 128, MetricType::METRIC_Jaccard);
+    Run(100, 10, 5, 128, knowhere::metric::JACCARD);
 }
