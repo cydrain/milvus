@@ -114,10 +114,10 @@ class TestFloatSearchBruteForce : public ::testing::Test {
 
         dataset::SearchDataset dataset{metric_type, nq, topk, -1, dim, query.data()};
         if (!is_supported_float_metric(metric_type)) {
-            ASSERT_ANY_THROW(FloatSearchBruteForce(dataset, base.data(), nb, bitset_view));
+            ASSERT_ANY_THROW(BruteForceSearch(dataset, base.data(), nb, bitset_view));
             return;
         }
-        auto result = FloatSearchBruteForce(dataset, base.data(), nb, bitset_view);
+        auto result = BruteForceSearch(dataset, base.data(), nb, bitset_view);
         for (int i = 0; i < nq; i++) {
             auto ref = Ref(base.data(), query.data() + i * dim, nb, dim, topk, metric_type);
             auto ans = result.get_seg_offsets() + i * topk;
@@ -135,5 +135,5 @@ TEST_F(TestFloatSearchBruteForce, IP) {
 }
 
 TEST_F(TestFloatSearchBruteForce, NotSupported) {
-    Run(100, 10, 5, 128, knowhere::metric::JACCARD);
+    Run(100, 10, 5, 128, "aaaaaaaaaaaa");
 }
