@@ -12,9 +12,9 @@
 #include <gtest/gtest.h>
 #include <boost/format.hpp>
 
+#include "knowhere/index/VecIndex.h"
 #include "knowhere/index/vector_index/IndexIVF.h"
 #include "knowhere/index/vector_index/IndexHNSW.h"
-#include "knowhere/index/vector_index/VecIndex.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "segcore/SegmentSealedImpl.h"
 #include "test_utils/DataGen.h"
@@ -80,12 +80,14 @@ TEST(Sealed, without_predicate) {
     auto pre_result = SearchResultToJson(*sr);
     auto indexing = std::make_shared<knowhere::IVF>();
 
-    auto conf = knowhere::Config{{knowhere::meta::DIM, dim},
-                                 {knowhere::meta::TOPK, topK},
-                                 {knowhere::IndexParams::nlist, 100},
-                                 {knowhere::IndexParams::nprobe, 10},
-                                 {knowhere::Metric::TYPE, knowhere::Metric::L2},
-                                 {knowhere::meta::DEVICEID, 0}};
+    auto conf = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::TOPK, topK},
+            {knowhere::indexparam::NLIST, 100},
+            {knowhere::indexparam::NPROBE, 10},
+            {knowhere::meta::DEVICE_ID, 0}
+    };
 
     auto database = knowhere::GenDataset(N, dim, vec_col.data() + 1000 * dim);
     indexing->Train(database, conf);
@@ -98,8 +100,8 @@ TEST(Sealed, without_predicate) {
 
     auto result = indexing->Query(query_dataset, conf, nullptr);
 
-    auto ids = result->Get<int64_t*>(knowhere::meta::IDS);     // for comparison
-    auto dis = result->Get<float*>(knowhere::meta::DISTANCE);  // for comparison
+    auto ids = knowhere::GetDatasetIDs(result);     // for comparison
+    auto dis = knowhere::GetDatasetDistance(result);  // for comparison
     std::vector<int64_t> vec_ids(ids, ids + topK * num_queries);
     std::vector<float> vec_dis(dis, dis + topK * num_queries);
 
@@ -188,12 +190,14 @@ TEST(Sealed, with_predicate) {
     auto sr = segment->Search(plan.get(), ph_group.get(), time);
     auto indexing = std::make_shared<knowhere::IVF>();
 
-    auto conf = knowhere::Config{{knowhere::meta::DIM, dim},
-                                 {knowhere::meta::TOPK, topK},
-                                 {knowhere::IndexParams::nlist, 100},
-                                 {knowhere::IndexParams::nprobe, 10},
-                                 {knowhere::Metric::TYPE, knowhere::Metric::L2},
-                                 {knowhere::meta::DEVICEID, 0}};
+    auto conf = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::TOPK, topK},
+            {knowhere::indexparam::NLIST, 100},
+            {knowhere::indexparam::NPROBE, 10},
+            {knowhere::meta::DEVICE_ID, 0}
+    };
 
     auto database = knowhere::GenDataset(N, dim, vec_col.data());
     indexing->Train(database, conf);
@@ -278,12 +282,14 @@ TEST(Sealed, with_predicate_filter_all) {
 
     auto ivf_indexing = std::make_shared<knowhere::IVF>();
 
-    auto ivf_conf = knowhere::Config{{knowhere::meta::DIM, dim},
-                                 {knowhere::meta::TOPK, topK},
-                                 {knowhere::IndexParams::nlist, 100},
-                                 {knowhere::IndexParams::nprobe, 10},
-                                 {knowhere::Metric::TYPE, knowhere::Metric::L2},
-                                 {knowhere::meta::DEVICEID, 0}};
+    auto ivf_conf = knowhere::Config{
+        {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
+        {knowhere::meta::DIM, dim},
+        {knowhere::meta::TOPK, topK},
+        {knowhere::indexparam::NLIST, 100},
+        {knowhere::indexparam::NPROBE, 10},
+        {knowhere::meta::DEVICE_ID, 0}
+    };
 
     auto database = knowhere::GenDataset(N, dim, vec_col.data());
     ivf_indexing->Train(database, ivf_conf);
@@ -305,14 +311,15 @@ TEST(Sealed, with_predicate_filter_all) {
     auto sr = ivf_sealed_segment->Search(plan.get(), ph_group.get(), time);
     EXPECT_EQ(sr->get_total_result_count(), 0);
 
-    auto hnsw_conf = knowhere::Config{{knowhere::meta::DIM, dim},
-                                 {knowhere::meta::TOPK, topK},
-				{knowhere::IndexParams::M, 16},   
-				{knowhere::IndexParams::efConstruction, 200},
-            			{knowhere::IndexParams::ef, 200}, 
-                                 {knowhere::Metric::TYPE, knowhere::Metric::L2},
-                                 {knowhere::meta::DEVICEID, 0}};
-
+    auto hnsw_conf = knowhere::Config{
+        {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
+        {knowhere::meta::DIM, dim},
+        {knowhere::meta::TOPK, topK},
+		{knowhere::indexparam::HNSW_M, 16},
+		{knowhere::indexparam::EFCONSTRUCTION, 200},
+        {knowhere::indexparam::EF, 200},
+        {knowhere::meta::DEVICE_ID, 0}
+    };
 
     auto hnsw_indexing = std::make_shared<knowhere::IndexHNSW>();
 
@@ -404,7 +411,7 @@ TEST(Sealed, LoadFieldData) {
     LoadIndexInfo vec_info;
     vec_info.field_id = fakevec_id.get();
     vec_info.index = indexing;
-    vec_info.index_params["metric_type"] = knowhere::Metric::L2;
+    vec_info.index_params["metric_type"] = knowhere::metric::L2;
     segment->LoadIndex(vec_info);
 
     ASSERT_EQ(segment->num_chunk(), 1);
@@ -532,7 +539,7 @@ TEST(Sealed, LoadScalarIndex) {
     vec_info.field_id = fakevec_id.get();
     vec_info.field_type = CDataType::FloatVector;
     vec_info.index = indexing;
-    vec_info.index_params["metric_type"] = knowhere::Metric::L2;
+    vec_info.index_params["metric_type"] = knowhere::metric::L2;
     segment->LoadIndex(vec_info);
 
     LoadIndexInfo counter_index;
