@@ -47,10 +47,27 @@ ReduceHelper::Initialize() {
     }
 }
 
+bool
+ReduceHelper::IsRangeSearch() {
+    if (plan_ != nullptr && plan_->plan_node_ != nullptr) {
+        auto& conf = plan_->plan_node_->search_info_.search_params_;
+        return knowhere::CheckKeyInConfig(conf, knowhere::meta::RADIUS);
+    }
+    return false;
+}
+
 void
 ReduceHelper::Reduce() {
-    FillPrimaryKey();
+    FillPrimaryKey(true);
     ReduceResultData();
+    RefreshSearchResult();
+    FillEntryData();
+}
+
+void
+ReduceHelper::Merge() {
+    FillPrimaryKey(false);
+    MergeResultData();
     RefreshSearchResult();
     FillEntryData();
 }
@@ -98,11 +115,13 @@ ReduceHelper::FilterInvalidSearchResult(SearchResult* search_result) {
 }
 
 void
-ReduceHelper::FillPrimaryKey() {
+ReduceHelper::FillPrimaryKey(bool filter_invalid) {
     std::vector<SearchResult*> valid_search_results;
     // get primary keys for duplicates removal
     for (auto search_result : search_results_) {
-        FilterInvalidSearchResult(search_result);
+        if (filter_invalid) {
+            FilterInvalidSearchResult(search_result);
+        }
         if (search_result->get_total_result_count() > 0) {
             auto segment = static_cast<SegmentInterface*>(search_result->segment_);
             segment->FillPrimaryKeys(plan_, *search_result);
@@ -147,7 +166,7 @@ ReduceHelper::FillEntryData() {
 }
 
 int64_t
-ReduceHelper::ReduceSearchResultForOneNQ(int64_t qi, int64_t topk, int64_t& offset) {
+ReduceHelper::ReduceSearchResultForOneNQ(int64_t qi, int64_t topk, int64_t& offset_in_result) {
     std::vector<SearchResultPair> result_pairs;
     for (int i = 0; i < num_segments_; i++) {
         auto search_result = search_results_[i];
@@ -168,8 +187,8 @@ ReduceHelper::ReduceSearchResultForOneNQ(int64_t qi, int64_t topk, int64_t& offs
 
     int64_t dup_cnt = 0;
     std::unordered_set<milvus::PkType> pk_set;
-    int64_t prev_offset = offset;
-    while (offset - prev_offset < topk) {
+    int64_t prev_offset_in_result = offset_in_result;
+    while (offset_in_result - prev_offset_in_result < topk) {
         std::sort(result_pairs.begin(), result_pairs.end(), std::greater<>());
         auto& pilot = result_pairs[0];
         auto index = pilot.segment_index_;
@@ -180,7 +199,7 @@ ReduceHelper::ReduceSearchResultForOneNQ(int64_t qi, int64_t topk, int64_t& offs
         }
         // remove duplicates
         if (pk_set.count(pk) == 0) {
-            pilot.search_result_->result_offsets_.push_back(offset++);
+            pilot.search_result_->result_offsets_.push_back(offset_in_result++);
             final_search_records_[index][qi].push_back(pilot.offset_);
             pk_set.insert(pk);
         } else {
@@ -212,6 +231,61 @@ ReduceHelper::ReduceResultData() {
         int64_t result_offset = 0;
         for (int64_t qi = nq_begin; qi < nq_end; qi++) {
             skip_dup_cnt += ReduceSearchResultForOneNQ(qi, slice_topKs_[slice_index], result_offset);
+        }
+    }
+    if (skip_dup_cnt > 0) {
+        LOG_SEGCORE_DEBUG_ << "skip duplicated search result, count = " << skip_dup_cnt;
+    }
+}
+
+int64_t
+ReduceHelper::MergeSearchResultForOneNQ(int64_t qi, int64_t& offset_in_result) {
+    int64_t dup_cnt = 0;
+    std::unordered_set<milvus::PkType> pk_set;
+    for (int i = 0; i < num_segments_; i++) {
+        auto search_result = search_results_[i];
+        auto offset_beg = search_result->topk_per_nq_prefix_sum_[qi];
+        auto offset_end = search_result->topk_per_nq_prefix_sum_[qi + 1];
+        for (auto offset = offset_beg; offset < offset_end; offset++) {
+            auto pk = search_result->primary_keys_[offset];
+            // no valid search result for this nq, break to next
+            if (pk == INVALID_PK) {
+                break;
+            }
+            // remove duplicates
+            if (pk_set.count(pk) == 0) {
+                search_result->result_offsets_.push_back(offset_in_result++);
+                final_search_records_[i][qi].push_back(offset);
+                pk_set.insert(pk);
+            } else {
+                // skip entity with same primary key
+                dup_cnt++;
+            }
+        }
+    }
+    return dup_cnt;
+}
+
+void
+ReduceHelper::MergeResultData() {
+    for (int i = 0; i < num_segments_; i++) {
+        auto search_result = search_results_[i];
+        auto result_count = search_result->get_total_result_count();
+        AssertInfo(search_result != nullptr, "search result must not equal to nullptr");
+        AssertInfo(search_result->distances_.size() == result_count, "incorrect search result distance size");
+        AssertInfo(search_result->seg_offsets_.size() == result_count, "incorrect search result seg offset size");
+        AssertInfo(search_result->primary_keys_.size() == result_count, "incorrect search result primary key size");
+    }
+
+    int64_t skip_dup_cnt = 0;
+    for (int64_t slice_index = 0; slice_index < num_slices_; slice_index++) {
+        auto nq_begin = slice_nqs_prefix_sum_[slice_index];
+        auto nq_end = slice_nqs_prefix_sum_[slice_index + 1];
+
+        // reduce search results
+        int64_t result_offset = 0;
+        for (int64_t qi = nq_begin; qi < nq_end; qi++) {
+            skip_dup_cnt += MergeSearchResultForOneNQ(qi, result_offset);
         }
     }
     if (skip_dup_cnt > 0) {

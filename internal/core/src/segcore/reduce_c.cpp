@@ -39,7 +39,11 @@ ReduceSearchResultsAndFillData(CSearchResultDataBlobs* cSearchResultDataBlobs,
         }
 
         auto reduce_helper = milvus::segcore::ReduceHelper(search_results, plan, slice_nqs, slice_topKs, num_slices);
-        reduce_helper.Reduce();
+        if (reduce_helper.IsRangeSearch()) {
+            reduce_helper.Merge();
+        } else {
+            reduce_helper.Reduce();
+        }
         reduce_helper.Marshal();
 
         // set final result ptr

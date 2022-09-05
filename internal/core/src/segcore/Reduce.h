@@ -42,8 +42,14 @@ class ReduceHelper {
         Initialize();
     }
 
+    bool
+    IsRangeSearch();
+
     void
     Reduce();
+
+    void
+    Merge();
 
     void
     Marshal();
@@ -61,7 +67,7 @@ class ReduceHelper {
     FilterInvalidSearchResult(SearchResult* search_result);
 
     void
-    FillPrimaryKey();
+    FillPrimaryKey(bool filter_invalid);
 
     void
     RefreshSearchResult();
@@ -74,6 +80,12 @@ class ReduceHelper {
 
     void
     ReduceResultData();
+
+    int64_t
+    MergeSearchResultForOneNQ(int64_t qi, int64_t& result_offset);
+
+    void
+    MergeResultData();
 
     std::vector<char>
     GetSearchResultDataSlice(int slice_index_);

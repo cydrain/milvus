@@ -44,8 +44,8 @@ struct SearchResult {
 
  public:
     int64_t total_nq_;
-    int64_t unity_topK_;
-    float radius_;
+    int64_t unity_topK_ = 0;
+    float radius_ = 0.0;
     void* segment_;
 
     // first fill data during search, and then update data after reducing search results
