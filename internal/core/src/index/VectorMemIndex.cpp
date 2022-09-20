@@ -20,12 +20,14 @@
 #include "exceptions/EasyAssert.h"
 #include "config/ConfigKnowhere.h"
 
+#include "common/BitsetView.h"
+#include "common/Consts.h"
+#include "common/Slice.h"
 #include "knowhere/index/VecIndexFactory.h"
 #include "knowhere/common/Timer.h"
-#include "common/BitsetView.h"
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
-#include "common/Slice.h"
+#include "query/RangeUtil.h"
 
 namespace milvus::index {
 
@@ -108,9 +110,6 @@ VectorMemIndex::BuildWithDataset(const DatasetPtr& dataset, const Config& config
 
 std::unique_ptr<SearchResult>
 VectorMemIndex::Query(const DatasetPtr dataset, const SearchInfo& search_info, const BitsetView& bitset) {
-    //    AssertInfo(GetMetricType() == search_info.metric_type_,
-    //               "Metric type of field index isn't the same with search info");
-
     auto load_raw_data_closure = [&]() { LoadRawData(); };  // hide this pointer
     auto index_type = GetIndexType();
 
@@ -121,18 +120,43 @@ VectorMemIndex::Query(const DatasetPtr dataset, const SearchInfo& search_info, c
     auto num_queries = knowhere::GetDatasetRows(dataset);
     Config search_conf = search_info.search_params_;
     auto topk = search_info.topk_;
+    auto metric_type = search_info.metric_type_;
+
+    knowhere::SetMetaMetricType(search_conf, GetMetricType());
+    knowhere::SetMetaTopk(search_conf, topk);
+
     // TODO :: check dim of search data
     auto final = [&] {
-        knowhere::SetMetaTopk(search_conf, topk);
-        knowhere::SetMetaMetricType(search_conf, GetMetricType());
+        bool has_low_bound = knowhere::CheckKeyInConfig(search_info.search_params_, RADIUS_LOW_BOUND);
+        bool has_high_bound = knowhere::CheckKeyInConfig(search_info.search_params_, RADIUS_HIGH_BOUND);
+
         auto index_type = GetIndexType();
+        auto index_mode = GetIndexMode();
         auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type);
         try {
-            adapter->CheckSearch(search_conf, index_type, GetIndexMode());
+            if (has_low_bound && has_high_bound) {
+                float low_bound = search_info.search_params_[RADIUS_LOW_BOUND];
+                float high_bound = search_info.search_params_[RADIUS_HIGH_BOUND];
+                if (metric_type == knowhere::metric::IP) {
+                    knowhere::SetMetaRadius(search_conf, low_bound);
+                } else {
+                    knowhere::SetMetaRadius(search_conf, high_bound);
+                }
+                adapter->CheckRangeSearch(search_conf, index_type, index_mode);
+                auto res = index_->QueryByRange(dataset, search_conf, bitset);
+                return query::ReGenRangeSearchResult(res, metric_type, num_queries, topk, low_bound, high_bound,
+                                                     bitset);
+            } else if (!has_low_bound && !has_high_bound) {
+                adapter->CheckSearch(search_conf, index_type, GetIndexMode());
+                return index_->Query(dataset, search_conf, bitset);
+            } else {
+                std::string err_msg =
+                    std::string(RADIUS_LOW_BOUND) + " and " + RADIUS_HIGH_BOUND + " must be set together";
+                AssertInfo(false, err_msg);
+            }
         } catch (std::exception& e) {
             AssertInfo(false, e.what());
         }
-        return index_->Query(dataset, search_conf, bitset);
     }();
 
     auto ids = knowhere::GetDatasetIDs(final);

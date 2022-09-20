@@ -36,3 +36,6 @@ const char INDEX_BUILD_ID_KEY[] = "indexBuildID";
 
 const char INDEX_ROOT_PATH[] = "index_files";
 const char RAWDATA_ROOT_PATH[] = "raw_datas";
+
+const char RADIUS_LOW_BOUND[] = "radius_low_bound";
+const char RADIUS_HIGH_BOUND[] = "radius_high_bound";

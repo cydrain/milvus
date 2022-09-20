@@ -16,12 +16,14 @@
 #include <string>
 #include <vector>
 
+#include "common/QueryResult.h"
 #include "faiss/utils/distances.h"
-#include "query/SearchBruteForce.h"
-#include "segcore/Reduce.h"
 #include "index/IndexFactory.h"
 #include "knowhere/archive/KnowhereConfig.h"
-#include "common/QueryResult.h"
+#include "knowhere/common/Config.h"
+#include "knowhere/index/vector_index/IndexIVF.h"
+#include "query/SearchBruteForce.h"
+#include "segcore/Reduce.h"
 #include "test_utils/indexbuilder_test_utils.h"
 #include "test_utils/DataGen.h"
 #include "test_utils/Timer.h"
@@ -161,7 +163,7 @@ TEST(Indexing, BinaryBruteForce) {
         query_data  //
     };
 
-    auto sub_result = query::BruteForceSearch(search_dataset, bin_vec.data(), N, nullptr);
+    auto sub_result = query::BruteForceSearch(search_dataset, bin_vec.data(), N, knowhere::Config(), nullptr);
 
     SearchResult sr;
     sr.total_nq_ = num_queries;
