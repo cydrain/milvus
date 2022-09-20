@@ -20,7 +20,8 @@ namespace milvus::query {
 SubSearchResult
 BruteForceSearch(const dataset::SearchDataset& dataset,
                  const void* chunk_data_raw,
-                 int64_t chunk_rows,
+                 const int64_t chunk_rows,
+                 const knowhere::Config& config,
                  const BitsetView& bitset);
 
 }  // namespace milvus::query

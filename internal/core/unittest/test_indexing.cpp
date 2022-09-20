@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "faiss/utils/distances.h"
+#include "knowhere/common/Config.h"
 #include "knowhere/index/vector_index/IndexIVF.h"
 #include "knowhere/index/vector_offset_index/IndexIVF_NM.h"
 #include "query/SearchBruteForce.h"
@@ -320,7 +321,7 @@ TEST(Indexing, BinaryBruteForce) {
         query_data  //
     };
 
-    auto sub_result = query::BruteForceSearch(search_dataset, bin_vec.data(), N, nullptr);
+    auto sub_result = query::BruteForceSearch(search_dataset, bin_vec.data(), N, knowhere::Config(), nullptr);
 
     SearchResult sr;
     sr.total_nq_ = num_queries;

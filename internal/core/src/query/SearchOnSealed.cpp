@@ -16,11 +16,63 @@
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
+#include "query/RangeUtil.h"
 #include "query/SearchBruteForce.h"
 #include "query/SearchOnSealed.h"
 #include "query/helper.h"
 
 namespace milvus::query {
+
+namespace {
+
+knowhere::DatasetPtr
+SearchOnIndex(const knowhere::VecIndexPtr index,
+              const void* query_data,
+              const int64_t num_queries,
+              const int64_t dim,
+              const SearchInfo& search_info,
+              const faiss::BitsetView bitset) {
+    auto ds = knowhere::GenDataset(num_queries, dim, query_data);
+
+    auto conf = search_info.search_params_;
+    auto& metric_type = search_info.metric_type_;
+    auto topk = search_info.topk_;
+
+    knowhere::SetMetaMetricType(conf, metric_type);
+    knowhere::SetMetaTopk(conf, topk);
+
+    bool has_low_bound = knowhere::CheckKeyInConfig(search_info.search_params_, RADIUS_LOW_BOUND);
+    bool has_high_bound = knowhere::CheckKeyInConfig(search_info.search_params_, RADIUS_HIGH_BOUND);
+
+    auto index_type = index->index_type();
+    auto index_mode = index->index_mode();
+    auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type);
+    try {
+        if (has_low_bound && has_high_bound) {
+            float low_bound = search_info.search_params_[RADIUS_LOW_BOUND];
+            float high_bound = search_info.search_params_[RADIUS_HIGH_BOUND];
+            if (metric_type == knowhere::metric::IP) {
+                knowhere::SetMetaRadius(conf, low_bound);
+            } else {
+                knowhere::SetMetaRadius(conf, high_bound);
+            }
+            adapter->CheckRangeSearch(conf, index_type, index_mode);
+            auto res = index->QueryByRange(ds, conf, bitset);
+            return ReGenRangeSearchResult(res, metric_type, num_queries, topk, low_bound, high_bound, bitset);
+        } else if (!has_low_bound && !has_high_bound) {
+            adapter->CheckSearch(conf, index_type, index_mode);
+            return index->Query(ds, conf, bitset);
+        } else {
+            std::string err_msg = std::string(RADIUS_LOW_BOUND) + " and " + RADIUS_HIGH_BOUND + " must be set together";
+            AssertInfo(false, err_msg);
+        }
+    } catch (std::exception& e) {
+        AssertInfo(false, e.what());
+    }
+    return nullptr;
+}
+
+}  // namespace
 
 void
 SearchOnSealedIndex(const Schema& schema,
@@ -38,26 +90,12 @@ SearchOnSealedIndex(const Schema& schema,
     // Assert(field.get_data_type() == DataType::VECTOR_FLOAT);
     auto dim = field.get_dim();
 
-    AssertInfo(record.is_ready(field_id), "[SearchOnSealed]Record isn't ready");
+    AssertInfo(record.is_ready(field_id), "[SearchOnSealedIndex] Record isn't ready");
     auto field_indexing = record.get_field_indexing(field_id);
-    AssertInfo(field_indexing->metric_type_ == search_info.metric_type_,
-               "Metric type of field index isn't the same with search info");
+    AssertInfo(field_indexing->metric_type_ == search_info.metric_type_, "Metric type mis-match");
 
-    auto final = [&] {
-        auto ds = knowhere::GenDataset(num_queries, dim, query_data);
-
-        auto conf = search_info.search_params_;
-        knowhere::SetMetaTopk(conf, search_info.topk_);
-        knowhere::SetMetaMetricType(conf, field_indexing->metric_type_);
-        auto index_type = field_indexing->indexing_->index_type();
-        auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type);
-        try {
-            adapter->CheckSearch(conf, index_type, field_indexing->indexing_->index_mode());
-        } catch (std::exception& e) {
-            AssertInfo(false, e.what());
-        }
-        return field_indexing->indexing_->Query(ds, conf, bitset);
-    }();
+    knowhere::DatasetPtr final =
+        SearchOnIndex(field_indexing->indexing_, query_data, num_queries, dim, search_info, bitset);
 
     auto ids = knowhere::GetDatasetIDs(final);
     float* distances = (float*)knowhere::GetDatasetDistance(final);
@@ -95,7 +133,7 @@ SearchOnSealed(const Schema& schema,
     auto vec_data = record.get_field_data_base(field_id);
     AssertInfo(vec_data->num_chunk() == 1, "num chunk not equal to 1 for sealed segment");
     auto chunk_data = vec_data->get_chunk_data(0);
-    auto sub_qr = query::BruteForceSearch(dataset, chunk_data, row_count, bitset);
+    auto sub_qr = query::BruteForceSearch(dataset, chunk_data, row_count, search_info.search_params_, bitset);
 
     result.distances_ = std::move(sub_qr.mutable_distances());
     result.seg_offsets_ = std::move(sub_qr.mutable_seg_offsets());
