@@ -44,12 +44,9 @@ BruteForceSearch(const dataset::SearchDataset& dataset,
 
     try {
         /* if radius_low_bound and radius_high_bound are set, do range search, otherwise do search */
-        bool has_low_bound = knowhere::CheckKeyInConfig(config, RADIUS_LOW_BOUND);
-        bool has_high_bound = knowhere::CheckKeyInConfig(config, RADIUS_HIGH_BOUND);
         knowhere::DatasetPtr result;
-        if (has_low_bound && has_high_bound) {
-            float low_bound = config[RADIUS_LOW_BOUND];
-            float high_bound = config[RADIUS_HIGH_BOUND];
+            float low_bound = -1.0;
+            float high_bound = 1000000;
 
             if (metric_type == knowhere::metric::IP) {
                 knowhere::SetMetaRadius(conf, low_bound);
@@ -59,12 +56,6 @@ BruteForceSearch(const dataset::SearchDataset& dataset,
 
             auto res = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, conf, bitset);
             result = ReGenRangeSearchResult(res, metric_type, nq, topk, low_bound, high_bound, bitset);
-        } else if (!has_low_bound && !has_high_bound) {
-            result = knowhere::BruteForce::Search(base_dataset, query_dataset, conf, bitset);
-        } else {
-            std::string err_msg = std::string(RADIUS_LOW_BOUND) + " and " + RADIUS_HIGH_BOUND + " must be set together";
-            AssertInfo(false, err_msg);
-        }
 
         sub_result.mutable_seg_offsets().resize(nq * topk);
         sub_result.mutable_distances().resize(nq * topk);

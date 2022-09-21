@@ -41,16 +41,12 @@ SearchOnIndex(const knowhere::VecIndexPtr index,
     knowhere::SetMetaMetricType(conf, metric_type);
     knowhere::SetMetaTopk(conf, topk);
 
-    bool has_low_bound = knowhere::CheckKeyInConfig(search_info.search_params_, RADIUS_LOW_BOUND);
-    bool has_high_bound = knowhere::CheckKeyInConfig(search_info.search_params_, RADIUS_HIGH_BOUND);
-
     auto index_type = index->index_type();
     auto index_mode = index->index_mode();
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type);
     try {
-        if (has_low_bound && has_high_bound) {
-            float low_bound = search_info.search_params_[RADIUS_LOW_BOUND];
-            float high_bound = search_info.search_params_[RADIUS_HIGH_BOUND];
+            float low_bound = -1.0;
+            float high_bound = 1000000;
             if (metric_type == knowhere::metric::IP) {
                 knowhere::SetMetaRadius(conf, low_bound);
             } else {
@@ -59,13 +55,6 @@ SearchOnIndex(const knowhere::VecIndexPtr index,
             adapter->CheckRangeSearch(conf, index_type, index_mode);
             auto res = index->QueryByRange(ds, conf, bitset);
             return ReGenRangeSearchResult(res, metric_type, num_queries, topk, low_bound, high_bound, bitset);
-        } else if (!has_low_bound && !has_high_bound) {
-            adapter->CheckSearch(conf, index_type, index_mode);
-            return index->Query(ds, conf, bitset);
-        } else {
-            std::string err_msg = std::string(RADIUS_LOW_BOUND) + " and " + RADIUS_HIGH_BOUND + " must be set together";
-            AssertInfo(false, err_msg);
-        }
     } catch (std::exception& e) {
         AssertInfo(false, e.what());
     }
