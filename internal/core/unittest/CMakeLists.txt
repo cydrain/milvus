@@ -102,4 +102,5 @@ install(TARGETS all_tests DESTINATION unittest)
 
 if (LINUX)
     add_subdirectory(bench)
+    add_subdirectory(benchmark)
 endif ()
