@@ -13,9 +13,6 @@
 
 #include <vector>
 
-#include "common/Schema.h"
-#include "segcore/SegmentSealed.h"
-
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/VecIndexFactory.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
@@ -109,44 +106,10 @@ class Benchmark_segcore : public Benchmark_sift {
         }
     }
 
-    void
-    CreateSchema() {
-        schema_ = std::make_shared<milvus::Schema>();
-        schema_->AddDebugField("vec", milvus::DataType::VECTOR_FLOAT, dim_, metric_type_);
-        auto pk_fid = schema_->AddDebugField("pk", milvus::DataType::INT64);
-        schema_->set_primary_field_id(pk_fid);
-    }
-
-    void
-    CreateSearchPlan() {
-        std::string dsl = R"({
-            "bool": {
-                "must": [{
-                    "vector": {
-                        "vec": {
-                            "metric_type": "L2",
-                            "params": {
-                                "nprobe": 10
-                            },
-                            "query": "$0",
-                            "topk": 10,
-                            "round_decimal": -1
-                        }
-                    }
-                }]
-            }
-        })";
-        plan_ = milvus::query::CreatePlan(*schema_, dsl);
-    }
-
  protected:
     knowhere::MetricType metric_type_;
     knowhere::BinarySet binary_set_;
     knowhere::IndexType index_type_;
     knowhere::VecIndexPtr index_ = nullptr;
     knowhere::Config cfg_;
-
-    milvus::SchemaPtr schema_;
-    std::unique_ptr<milvus::query::Plan> plan_;
-    std::shared_ptr<milvus::segcore::SegmentInterface> segment_;
 };

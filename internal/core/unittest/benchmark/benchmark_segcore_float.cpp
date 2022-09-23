@@ -14,6 +14,7 @@
 
 #include "benchmark_segcore.h"
 #include "knowhere/archive/KnowhereConfig.h"
+#include "segcore/SegmentSealedImpl.h"
 
 class Benchmark_segcore_float : public Benchmark_segcore {
  public:
@@ -253,11 +254,9 @@ TEST_F(Benchmark_segcore_float, TEST_IDMAP) {
 
     knowhere::Config conf = cfg_;
     std::string index_file_name = get_index_name({});
-#ifdef KNOWHERE_GPU_VERSION
-    create_index(index_file_name, conf, knowhere::IndexMode::MODE_GPU);
-#else
+    segment_ = milvus::segcore::CreateSealedSegment(schema_);
+
     create_index(index_file_name, conf);
-#endif
     index_->Load(binary_set_);
     binary_set_.clear();
     test_idmap(conf);
