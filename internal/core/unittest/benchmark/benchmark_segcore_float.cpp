@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "benchmark_segcore.h"
-#include "knowhere/archive/KnowhereConfig.h"
+#include "segcore/segcore_init_c.h"
 
 class Benchmark_segcore_float : public Benchmark_segcore {
  public:
@@ -21,14 +21,31 @@ class Benchmark_segcore_float : public Benchmark_segcore {
     test_idmap(const knowhere::Config& cfg) {
         auto conf = cfg;
 
+        std::string dsl_fmt = R"({
+            "bool": {
+                "must": [{
+                    "vector": {
+                        "vec": {
+                            "metric_type": "%s",
+                            "query": "$0",
+                            "topk": %d,
+                            "round_decimal": 4,
+                            "params": {
+                                "nprobe": 1
+                            }
+                        }
+                    }
+                }]
+            }
+        })";
+
         printf("\n[%0.3f s] %s | %s \n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
         printf("================================================================================\n");
         for (auto nq : NQs_) {
-            knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
             for (auto k : TOPKs_) {
-                knowhere::SetMetaTopk(conf, k);
-                CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
-                auto ids = knowhere::GetDatasetIDs(result);
+                auto dsl = boost::format(dsl_fmt) % metric_type_.c_str() % k;
+                CALC_TIME_SPAN(auto result = Search(dsl.str(), nq, k, conf));
+                auto ids = result->seg_offsets_.data();
                 float recall = CalcRecall(ids, nq, k);
                 printf("  nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", nq, k, t_diff, recall);
             }
@@ -40,52 +57,41 @@ class Benchmark_segcore_float : public Benchmark_segcore {
     void
     test_ivf(const knowhere::Config& cfg) {
         auto conf = cfg;
-        auto nlist = knowhere::GetIndexParamNlist(conf);
+        std::string nlist = conf[knowhere::indexparam::NLIST];
 
-        printf("\n[%0.3f s] %s | %s | nlist=%ld\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(),
-               nlist);
+        std::string dsl_fmt = R"({
+            "bool": {
+                "must": [{
+                    "vector": {
+                        "vec": {
+                            "metric_type": "%s",
+                            "query": "$0",
+                            "topk": %d,
+                            "round_decimal": 4,
+                            "params": {
+                                "nprobe": %d
+                            }
+                        }
+                    }
+                }]
+            }
+        })";
+
+        printf("\n[%0.3f s] %s | %s | nlist=%s\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(),
+               nlist.c_str());
         printf("================================================================================\n");
         for (auto nprobe : NPROBEs_) {
-            knowhere::SetIndexParamNprobe(conf, nprobe);
             for (auto nq : NQs_) {
-                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
                 for (auto k : TOPKs_) {
-                    knowhere::SetMetaTopk(conf, k);
-                    CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
-                    auto ids = knowhere::GetDatasetIDs(result);
+                    auto dsl = boost::format(dsl_fmt) % metric_type_.c_str() % k % nprobe;
+                    CALC_TIME_SPAN(auto result = Search(dsl.str(), nq, k, conf));
+                    auto ids = result->seg_offsets_.data();
                     float recall = CalcRecall(ids, nq, k);
                     printf("  nprobe = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", nprobe, nq, k, t_diff,
                            recall);
+                    std::fflush(stdout);
                 }
             }
-        }
-        printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
-    }
-
-    void
-    test_ivf_parallel(const knowhere::Config& cfg) {
-        auto conf = cfg;
-        auto nlist = knowhere::GetIndexParamNlist(conf);
-
-        int32_t nq = NQs_[0];
-        int32_t k = TOPKs_[0];
-        knowhere::SetMetaTopk(conf, k);
-        knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
-
-        printf("\n[%0.3f s] %s | %s | nlist=%ld\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(),
-               nlist);
-        printf("================================================================================\n");
-#pragma omp parallel for
-        for (size_t i = 0; i < NPROBEs_.size(); i++) {
-            int32_t nprobe = NPROBEs_[i];
-            auto conf1 = conf;
-            knowhere::SetIndexParamNprobe(conf1, nprobe);
-            CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf1, nullptr));
-            auto ids = knowhere::GetDatasetIDs(result);
-            float recall = CalcRecall(ids, nq, k);
-            printf("  nprobe = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", nprobe, nq, k, t_diff,
-                   recall);
         }
         printf("================================================================================\n");
         printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
@@ -94,106 +100,41 @@ class Benchmark_segcore_float : public Benchmark_segcore {
     void
     test_hnsw(const knowhere::Config& cfg) {
         auto conf = cfg;
-        auto M = knowhere::GetIndexParamHNSWM(conf);
-        auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
+        std::string M = conf[knowhere::indexparam::HNSW_M];
+        std::string efConstruction = conf[knowhere::indexparam::EFCONSTRUCTION];
 
-        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n", get_time_diff(), ann_test_name_.c_str(),
-               index_type_.c_str(), M, efConstruction);
+        std::string dsl_fmt = R"({
+            "bool": {
+                "must": [{
+                    "vector": {
+                        "vec": {
+                            "metric_type": "%s",
+                            "query": "$0",
+                            "topk": %d,
+                            "round_decimal": 4,
+                            "params": {
+                                "ef": %d
+                            }
+                        }
+                    }
+                }]
+            }
+        })";
+
+        printf("\n[%0.3f s] %s | %s | M=%s | efConstruction=%s\n", get_time_diff(), ann_test_name_.c_str(),
+               index_type_.c_str(), M.c_str(), efConstruction.c_str());
         printf("================================================================================\n");
         for (auto ef : EFs_) {
-            knowhere::SetIndexParamEf(conf, ef);
             for (auto nq : NQs_) {
-                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
                 for (auto k : TOPKs_) {
-                    knowhere::SetMetaTopk(conf, k);
-                    CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
-                    auto ids = knowhere::GetDatasetIDs(result);
+                    auto dsl = boost::format(dsl_fmt) % metric_type_.c_str() % k % ef;
+                    CALC_TIME_SPAN(auto result = Search(dsl.str(), nq, k, conf));
+                    auto ids = result->seg_offsets_.data();
                     float recall = CalcRecall(ids, nq, k);
                     printf("  ef = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", ef, nq, k, t_diff, recall);
+                    std::fflush(stdout);
                 }
             }
-        }
-        printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
-    }
-
-    void
-    test_hnsw_parallel(const knowhere::Config& cfg) {
-        auto conf = cfg;
-        auto M = knowhere::GetIndexParamHNSWM(conf);
-        auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
-
-        int32_t nq = NQs_[0];
-        int32_t k = TOPKs_[0];
-        knowhere::SetMetaTopk(conf, k);
-        knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
-
-        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n", get_time_diff(), ann_test_name_.c_str(),
-               index_type_.c_str(), M, efConstruction);
-        printf("================================================================================\n");
-#pragma omp parallel for
-        for (size_t i = 0; i < EFs_.size(); i++) {
-            int32_t ef = EFs_[i];
-            auto conf1 = conf;
-            knowhere::SetIndexParamEf(conf1, ef);
-            CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf1, nullptr));
-            auto ids = knowhere::GetDatasetIDs(result);
-            float recall = CalcRecall(ids, nq, k);
-            printf("  ef = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", ef, nq, k, t_diff, recall);
-        }
-        printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
-    }
-
-    void
-    test_annoy(const knowhere::Config& cfg) {
-        auto conf = cfg;
-        auto n_trees = knowhere::GetIndexParamNtrees(conf);
-
-        printf("\n[%0.3f s] %s | %s | n_trees=%ld \n", get_time_diff(), ann_test_name_.c_str(),
-               index_type_.c_str(), n_trees);
-        printf("================================================================================\n");
-        for (auto sk : SEARCH_Ks_) {
-            knowhere::SetIndexParamSearchK(conf, sk);
-            for (auto nq : NQs_) {
-                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
-                for (auto k : TOPKs_) {
-                    knowhere::SetMetaTopk(conf, k);
-                    CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
-                    auto ids = knowhere::GetDatasetIDs(result);
-                    float recall = CalcRecall(ids, nq, k);
-                    printf("  search_k = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", sk, nq, k, t_diff,
-                           recall);
-                }
-            }
-        }
-        printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
-    }
-
-    void
-    test_annoy_parallel(const knowhere::Config& cfg) {
-        auto conf = cfg;
-        auto n_trees = knowhere::GetIndexParamNtrees(conf);
-
-        int32_t nq = NQs_[0];
-        int32_t k = TOPKs_[0];
-        knowhere::SetMetaTopk(conf, k);
-        knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
-
-        printf("\n[%0.3f s] %s | %s | n_trees=%ld \n", get_time_diff(), ann_test_name_.c_str(),
-               index_type_.c_str(), n_trees);
-        printf("================================================================================\n");
-#pragma omp parallel for
-        for (size_t i = 0; i < SEARCH_Ks_.size(); i++) {
-            int32_t sk = SEARCH_Ks_[i];
-            auto conf1 = conf;
-            knowhere::SetIndexParamSearchK(conf1, sk);
-            CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf1, nullptr));
-            auto ids = knowhere::GetDatasetIDs(result);
-            float recall = CalcRecall(ids, nq, k);
-            printf("  search_k = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", sk, nq, k, t_diff,
-                   recall);
         }
         printf("================================================================================\n");
         printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
@@ -209,21 +150,18 @@ class Benchmark_segcore_float : public Benchmark_segcore {
 
         assert(metric_str_ == METRIC_IP_STR || metric_str_ == METRIC_L2_STR);
         metric_type_ = (metric_str_ == METRIC_IP_STR) ? knowhere::metric::IP : knowhere::metric::L2;
-        knowhere::SetMetaMetricType(cfg_, metric_type_);
-        knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
-        printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
-#ifdef KNOWHERE_GPU_VERSION
-        knowhere::KnowhereConfig::InitGPUResource({GPU_DEVICE_ID});
-        knowhere::SetMetaDeviceID(cfg_, GPU_DEVICE_ID);
-#endif
+        vector_data_type_ = milvus::DataType::VECTOR_FLOAT;
+        cfg_[knowhere::meta::METRIC_TYPE] = metric_type_;
+        cfg_[knowhere::meta::DIM] = std::to_string(dim_);
+
+        SegcoreSetSimdType("avx2");
+        CreateSchema();
+        PrepareRawData();
     }
 
     void
     TearDown() override {
         free_all();
-#ifdef KNOWHERE_GPU_VERSION
-        knowhere::KnowhereConfig::FreeGPUResource();
-#endif
     }
 
  protected:
@@ -241,50 +179,24 @@ class Benchmark_segcore_float : public Benchmark_segcore {
     // HNSW index params
     const std::vector<int32_t> HNSW_Ms_ = {16};
     const std::vector<int32_t> EFCONs_ = {200};
-    const std::vector<int32_t> EFs_ = {16, 32, 64, 128, 256, 512};
-
-    // ANNOY index params
-    const std::vector<int32_t> N_TREEs_ = {8};
-    const std::vector<int32_t> SEARCH_Ks_ = {50, 100, 500};
+    const std::vector<int32_t> EFs_ = {128, 256, 512};
 };
 
 TEST_F(Benchmark_segcore_float, TEST_IDMAP) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IDMAP;
 
     knowhere::Config conf = cfg_;
-    std::string index_file_name = get_index_name({});
-#ifdef KNOWHERE_GPU_VERSION
-    create_index(index_file_name, conf, knowhere::IndexMode::MODE_GPU);
-#else
-    create_index(index_file_name, conf);
-#endif
-    index_->Load(binary_set_);
-    binary_set_.clear();
+    CreateAndLoadSealedSegment(index_type_, vector_data_type_, conf);
     test_idmap(conf);
 }
 
-TEST_F(Benchmark_segcore_float, TEST_IVF_FLAT_NM) {
+TEST_F(Benchmark_segcore_float, TEST_IVF_FLAT) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
 
     knowhere::Config conf = cfg_;
     for (auto nlist : NLISTs_) {
-        knowhere::SetIndexParamNlist(conf, nlist);
-
-        std::string index_file_name = get_index_name({nlist});
-#ifdef KNOWHERE_GPU_VERSION
-        create_index(index_file_name, conf, knowhere::IndexMode::MODE_GPU);
-#else
-        create_index(index_file_name, conf);
-#endif
-
-        // IVFFLAT_NM should load raw data
-        knowhere::BinaryPtr bin = std::make_shared<knowhere::Binary>();
-        bin->data = std::shared_ptr<uint8_t[]>((uint8_t*)xb_, [&](uint8_t*) {});
-        bin->size = dim_ * nb_ * sizeof(float);
-        binary_set_.Append(RAW_DATA, bin);
-
-        index_->Load(binary_set_);
-        binary_set_.clear();
+        conf[knowhere::indexparam::NLIST] = std::to_string(nlist);
+        CreateAndLoadSealedSegment(index_type_, vector_data_type_, conf);
         test_ivf(conf);
     }
 }
@@ -294,16 +206,8 @@ TEST_F(Benchmark_segcore_float, TEST_IVF_SQ8) {
 
     knowhere::Config conf = cfg_;
     for (auto nlist : NLISTs_) {
-        knowhere::SetIndexParamNlist(conf, nlist);
-
-        std::string index_file_name = get_index_name({nlist});
-#ifdef KNOWHERE_GPU_VERSION
-        create_index(index_file_name, conf, knowhere::IndexMode::MODE_GPU);
-#else
-        create_index(index_file_name, conf);
-#endif
-        index_->Load(binary_set_);
-        binary_set_.clear();
+        conf[knowhere::indexparam::NLIST] = std::to_string(nlist);
+        CreateAndLoadSealedSegment(index_type_, vector_data_type_, conf);
         test_ivf(conf);
     }
 }
@@ -312,20 +216,12 @@ TEST_F(Benchmark_segcore_float, TEST_IVF_PQ) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFPQ;
 
     knowhere::Config conf = cfg_;
-    knowhere::SetIndexParamNbits(conf, NBITS_);
+    conf[knowhere::indexparam::NBITS] = std::to_string(NBITS_);
     for (auto m : Ms_) {
-        knowhere::SetIndexParamM(conf, m);
+        conf[knowhere::indexparam::M] = std::to_string(m);
         for (auto nlist : NLISTs_) {
-            knowhere::SetIndexParamNlist(conf, nlist);
-
-            std::string index_file_name = get_index_name({nlist, m});
-#ifdef KNOWHERE_GPU_VERSION
-            create_index(index_file_name, conf, knowhere::IndexMode::MODE_GPU);
-#else
-            create_index(index_file_name, conf);
-#endif
-            index_->Load(binary_set_);
-            binary_set_.clear();
+            conf[knowhere::indexparam::NLIST] = std::to_string(nlist);
+            CreateAndLoadSealedSegment(index_type_, vector_data_type_, conf);
             test_ivf(conf);
         }
     }
@@ -336,30 +232,11 @@ TEST_F(Benchmark_segcore_float, TEST_HNSW) {
 
     knowhere::Config conf = cfg_;
     for (auto M : HNSW_Ms_) {
-        knowhere::SetIndexParamHNSWM(conf, M);
+        conf[knowhere::indexparam::HNSW_M] = std::to_string(M);
         for (auto efc : EFCONs_) {
-            knowhere::SetIndexParamEfConstruction(conf, efc);
-
-            std::string index_file_name = get_index_name({M, efc});
-            create_index(index_file_name, conf);
-            index_->Load(binary_set_);
-            binary_set_.clear();
+            conf[knowhere::indexparam::EFCONSTRUCTION] = std::to_string(efc);
+            CreateAndLoadSealedSegment(index_type_, vector_data_type_, conf);
             test_hnsw(conf);
         }
-    }
-}
-
-TEST_F(Benchmark_segcore_float, TEST_ANNOY) {
-    index_type_ = knowhere::IndexEnum::INDEX_ANNOY;
-
-    knowhere::Config conf = cfg_;
-    for (auto n : N_TREEs_) {
-        knowhere::SetIndexParamNtrees(conf, n);
-
-        std::string index_file_name = get_index_name({n});
-        create_index(index_file_name, conf);
-        index_->Load(binary_set_);
-        binary_set_.clear();
-        test_annoy(conf);
     }
 }

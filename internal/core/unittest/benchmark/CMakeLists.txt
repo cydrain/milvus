@@ -9,8 +9,8 @@
 # is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 # or implied. See the License for the specific language governing permissions and limitations under the License
 
-include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty)
-include_directories(${KNOWHERE_SOURCE_DIR}/include)
+include_directories(${CMAKE_HOME_DIRECTORY}/src)
+include_directories(${CMAKE_HOME_DIRECTORY}/src/thirdparty)
 
 include_directories(/usr/local/hdf5/include)
 link_directories(/usr/local/hdf5/lib)
@@ -19,10 +19,9 @@ set(unittest_libs
         gtest gmock gtest_main gmock_main)
 
 set(depend_libs
-        knowhere
+        milvus_segcore
+        milvus_indexbuilder
         hdf5
-        ${OpenBLAS_LIBRARIES}
-        ${LAPACK_LIBRARIES}
         )
 
 if ( LINUX AND ENABLE_PROFILING )

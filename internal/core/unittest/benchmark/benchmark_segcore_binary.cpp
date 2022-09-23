@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "benchmark_segcore.h"
-#include "knowhere/archive/KnowhereConfig.h"
+#include "segcore/segcore_init_c.h"
 
 class Benchmark_segcore_binary : public Benchmark_segcore {
  public:
@@ -21,16 +21,34 @@ class Benchmark_segcore_binary : public Benchmark_segcore {
     test_binary_idmap(const knowhere::Config& cfg) {
         auto conf = cfg;
 
+        std::string dsl_template = R"({
+            "bool": {
+                "must": [{
+                    "vector": {
+                        "vec": {
+                            "metric_type": "%s",
+                            "params": {
+                                "nprobe": 1
+                            },
+                            "query": "$0",
+                            "topk": %d,
+                            "round_decimal": 4
+                        }
+                    }
+                }]
+            }
+        })";
+
         printf("\n[%0.3f s] %s | %s \n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
         printf("================================================================================\n");
         for (auto nq : NQs_) {
-            knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
             for (auto k : TOPKs_) {
-                knowhere::SetMetaTopk(conf, k);
-                CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
-                auto ids = knowhere::GetDatasetIDs(result);
+                auto dsl = boost::format(dsl_template) % metric_type_.c_str() % k;
+                CALC_TIME_SPAN(auto result = Search(dsl.str(), nq, k, conf));
+                auto ids = result->seg_offsets_.data();
                 float recall = CalcRecall(ids, nq, k);
                 printf("  nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", nq, k, t_diff, recall);
+                std::fflush(stdout);
             }
         }
         printf("================================================================================\n");
@@ -40,22 +58,39 @@ class Benchmark_segcore_binary : public Benchmark_segcore {
     void
     test_binary_ivf(const knowhere::Config& cfg) {
         auto conf = cfg;
-        auto nlist = knowhere::GetIndexParamNlist(conf);
+        std::string nlist = conf[knowhere::indexparam::NLIST];
 
-        printf("\n[%0.3f s] %s | %s | nlist=%ld\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(),
-               nlist);
+        std::string dsl_template = R"({
+            "bool": {
+                "must": [{
+                    "vector": {
+                        "vec": {
+                            "metric_type": "%s",
+                            "params": {
+                                "nprobe": %d
+                            },
+                            "query": "$0",
+                            "topk": %d,
+                            "round_decimal": 4
+                        }
+                    }
+                }]
+            }
+        })";
+
+        printf("\n[%0.3f s] %s | %s | nlist=%s\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(),
+               nlist.c_str());
         printf("================================================================================\n");
         for (auto nprobe : NPROBEs_) {
-            knowhere::SetIndexParamNprobe(conf, nprobe);
             for (auto nq : NQs_) {
-                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
                 for (auto k : TOPKs_) {
-                    knowhere::SetMetaTopk(conf, k);
-                    CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
-                    auto ids = knowhere::GetDatasetIDs(result);
+                    auto dsl = boost::format(dsl_template) % metric_type_.c_str() % nprobe % k;
+                    CALC_TIME_SPAN(auto result = Search(dsl.str(), nq, k, conf));
+                    auto ids = result->seg_offsets_.data();
                     float recall = CalcRecall(ids, nq, k);
                     printf("  nprobe = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", nprobe, nq, k, t_diff,
                            recall);
+                    std::fflush(stdout);
                 }
             }
         }
@@ -76,9 +111,13 @@ class Benchmark_segcore_binary : public Benchmark_segcore {
         metric_type_ = (metric_str_ == METRIC_HAM_STR)   ? knowhere::metric::HAMMING
                        : (metric_str_ == METRIC_JAC_STR) ? knowhere::metric::JACCARD
                                                          : knowhere::metric::TANIMOTO;
-        knowhere::SetMetaMetricType(cfg_, metric_type_);
-        knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
-        printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
+        vector_data_type_ = milvus::DataType::VECTOR_BINARY;
+        cfg_[knowhere::meta::METRIC_TYPE] = metric_type_;
+        cfg_[knowhere::meta::DIM] = std::to_string(dim_);
+
+        SegcoreSetSimdType("avx2");
+        CreateSchema();
+        PrepareRawData();
     }
 
     void
@@ -95,57 +134,11 @@ class Benchmark_segcore_binary : public Benchmark_segcore {
     const std::vector<int32_t> NPROBEs_ = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512};
 };
 
-// This testcase can be used to generate binary sift1m HDF5 file
-// Following these steps:
-//   1. set_ann_test_name("sift-128-euclidean")
-//   2. use load_hdf5_data<false>();
-//   3. change metric type to expected value (hamming/jaccard/tanimoto) manually
-//   4. specify the hdf5 file name to generate
-//   5. run this testcase
-#if 0
-TEST_F(Benchmark_knowhere_binary, TEST_CREATE_BINARY_HDF5) {
-    index_type_ = knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP;
-
-    knowhere::Config conf = cfg_;
-    std::string index_file_name = get_index_name({});
-
-    // use sift1m data as binary data
-    dim_ *= 32;
-    metric_type_ = knowhere::metric::HAMMING;
-    knowhere::SetMetaMetricType(conf, metric_type_);
-
-    create_index(index_file_name, conf);
-    index_->Load(binary_set_);
-
-    knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq_, dim_, xq_);
-    knowhere::SetMetaTopk(conf, gt_k_);
-    auto result = index_->Query(ds_ptr, conf, nullptr);
-
-    auto gt_ids = knowhere::GetDatasetIDs(result);
-    auto gt_dist = knowhere::GetDatasetDistance(result);
-
-    auto gt_ids_int = new int32_t[gt_k_ * nq_];
-    for (int32_t i = 0; i < gt_k_ * nq_; i++) {
-        gt_ids_int[i] = gt_ids[i];
-    }
-
-    assert(dim_ == 4096);
-    assert(nq_ == 10000);
-    assert(gt_k_ == 100);
-    hdf5_write<true>("sift-4096-hamming.hdf5", dim_/32, gt_k_, xb_, nb_, xq_, nq_, gt_ids_int, gt_dist);
-
-    delete[] gt_ids_int;
-}
-#endif
-
 TEST_F(Benchmark_segcore_binary, TEST_BINARY_IDMAP) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP;
 
     knowhere::Config conf = cfg_;
-    std::string index_file_name = get_index_name({});
-    create_index(index_file_name, conf);
-    index_->Load(binary_set_);
-    binary_set_.clear();
+    CreateAndLoadSealedSegment(index_type_, vector_data_type_, conf);
     test_binary_idmap(conf);
 }
 
@@ -154,11 +147,8 @@ TEST_F(Benchmark_segcore_binary, TEST_BINARY_IVF_FLAT) {
 
     knowhere::Config conf = cfg_;
     for (auto nlist : NLISTs_) {
-        std::string index_file_name = get_index_name({nlist});
-        knowhere::SetIndexParamNlist(conf, nlist);
-        create_index(index_file_name, conf);
-        index_->Load(binary_set_);
-        binary_set_.clear();
+        conf[knowhere::indexparam::NLIST] = std::to_string(nlist);
+        CreateAndLoadSealedSegment(index_type_, vector_data_type_, conf);
         test_binary_ivf(conf);
     }
 }
