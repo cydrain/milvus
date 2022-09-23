@@ -11,6 +11,7 @@
 
 #include <cmath>
 
+#include "log/Log.h"
 #include "knowhere/index/VecIndex.h"
 #include "knowhere/index/vector_index/ConfAdapter.h"
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
@@ -48,6 +49,8 @@ SearchOnSealed(const Schema& schema,
         auto conf = search_info.search_params_;
         knowhere::SetMetaTopk(conf, search_info.topk_);
         knowhere::SetMetaMetricType(conf, field_indexing->metric_type_);
+        LOG_SEGCORE_ERROR_ << "CYD - Search config: " << conf.dump();
+        std::cout << "CYD - Search config: " << conf.dump() << std::endl;
         auto index_type = field_indexing->indexing_->index_type();
         auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type);
         try {
