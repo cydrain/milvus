@@ -1,0 +1,43 @@
+Running main() from /home/caiyd/vec/milvus/internal/core/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_segcore_float.TEST_IVF_FLAT
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_segcore_float
+[ RUN      ] Benchmark_segcore_float.TEST_IVF_FLAT
+[0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
+[0.000 s] Loading train data
+[0.197 s] Loading test data
+[0.199 s] Loading ground truth data
+2022-09-28 18:50:09,540 DEBUG [default] [caiyd@unknown-host] [char* milvus::segcore::SegcoreSetSimdType(const char*)] [/home/caiyd/vec/milvus/internal/core/src/segcore/segcore_init_c.cpp:45] [SEGCORE][SegcoreSetSimdType][benchmark_segco] set config simd_type: avx2
+2022-09-28 18:50:09,540 INFO [default] [KNOWHERE][SetSimdType][benchmark_segco] FAISS expect simdType::AVX2
+2022-09-28 18:50:09,540 INFO [default] [KNOWHERE][SetSimdType][benchmark_segco] FAISS hook AVX2
+[0.202 s] Creating schema
+[0.202 s] Preparing raw data
+[0.409 s] Creating sealed segment
+[0.409 s] Loading row ids for sealed segment
+[0.415 s] Loading timestamps for sealed segment
+[0.424 s] Loading raw data for sealed segment
+[0.906 s] Building index on 1000000 vectors
+[13.916 s] Loading index for sealed segment
+
+[13.935 s] sift-128-euclidean | IVF_FLAT | nlist=1024
+================================================================================
+  nprobe =    1, nq = 10000, k =  100, elapse =  0.517s, R@ = 0.2914
+  nprobe =    2, nq = 10000, k =  100, elapse =  0.433s, R@ = 0.4403
+  nprobe =    4, nq = 10000, k =  100, elapse =  0.808s, R@ = 0.6042
+  nprobe =    8, nq = 10000, k =  100, elapse =  1.553s, R@ = 0.7587
+  nprobe =   16, nq = 10000, k =  100, elapse =  2.987s, R@ = 0.8809
+  nprobe =   32, nq = 10000, k =  100, elapse =  5.865s, R@ = 0.9564
+  nprobe =   64, nq = 10000, k =  100, elapse = 11.365s, R@ = 0.9898
+  nprobe =  128, nq = 10000, k =  100, elapse = 22.186s, R@ = 0.9988
+  nprobe =  256, nq = 10000, k =  100, elapse = 43.402s, R@ = 0.9999
+  nprobe =  512, nq = 10000, k =  100, elapse = 85.049s, R@ = 0.9999
+================================================================================
+[188.789 s] Test 'sift-128-euclidean/IVF_FLAT' done
+
+[       OK ] Benchmark_segcore_float.TEST_IVF_FLAT (188867 ms)
+[----------] 1 test from Benchmark_segcore_float (188867 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (188868 ms total)
+[  PASSED  ] 1 test.

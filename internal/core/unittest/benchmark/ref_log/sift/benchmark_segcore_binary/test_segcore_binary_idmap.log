@@ -1,0 +1,34 @@
+Running main() from /home/caiyd/vec/milvus/internal/core/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_segcore_binary.TEST_BINARY_IDMAP
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_segcore_binary
+[ RUN      ] Benchmark_segcore_binary.TEST_BINARY_IDMAP
+[0.000 s] Loading HDF5 file: sift-4096-hamming.hdf5
+[0.000 s] Loading train data
+[0.199 s] Loading test data
+[0.201 s] Loading ground truth data
+2022-09-28 18:59:16,832 DEBUG [default] [caiyd@unknown-host] [char* milvus::segcore::SegcoreSetSimdType(const char*)] [/home/caiyd/vec/milvus/internal/core/src/segcore/segcore_init_c.cpp:45] [SEGCORE][SegcoreSetSimdType][benchmark_segco] set config simd_type: avx2
+2022-09-28 18:59:16,832 INFO [default] [KNOWHERE][SetSimdType][benchmark_segco] FAISS expect simdType::AVX2
+2022-09-28 18:59:16,832 INFO [default] [KNOWHERE][SetSimdType][benchmark_segco] FAISS hook AVX2
+[0.204 s] Creating schema
+[0.204 s] Preparing raw data
+[0.415 s] Creating sealed segment
+[0.415 s] Loading row ids for sealed segment
+[0.420 s] Loading timestamps for sealed segment
+[0.429 s] Loading raw data for sealed segment
+[0.915 s] Building index on 1000000 vectors
+[1.114 s] Loading index for sealed segment
+
+[1.132 s] sift-4096-hamming | BIN_FLAT 
+================================================================================
+  nq = 10000, k =  100, elapse = 46.262s, R@ = 1.0000
+================================================================================
+[47.467 s] Test 'sift-4096-hamming/BIN_FLAT' done
+
+[       OK ] Benchmark_segcore_binary.TEST_BINARY_IDMAP (47525 ms)
+[----------] 1 test from Benchmark_segcore_binary (47525 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (47525 ms total)
+[  PASSED  ] 1 test.

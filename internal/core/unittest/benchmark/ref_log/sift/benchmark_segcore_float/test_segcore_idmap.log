@@ -1,0 +1,34 @@
+Running main() from /home/caiyd/vec/milvus/internal/core/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_segcore_float.TEST_IDMAP
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_segcore_float
+[ RUN      ] Benchmark_segcore_float.TEST_IDMAP
+[0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
+[0.000 s] Loading train data
+[0.173 s] Loading test data
+[0.175 s] Loading ground truth data
+2022-09-28 18:49:32,061 DEBUG [default] [caiyd@unknown-host] [char* milvus::segcore::SegcoreSetSimdType(const char*)] [/home/caiyd/vec/milvus/internal/core/src/segcore/segcore_init_c.cpp:45] [SEGCORE][SegcoreSetSimdType][benchmark_segco] set config simd_type: avx2
+2022-09-28 18:49:32,061 INFO [default] [KNOWHERE][SetSimdType][benchmark_segco] FAISS expect simdType::AVX2
+2022-09-28 18:49:32,061 INFO [default] [KNOWHERE][SetSimdType][benchmark_segco] FAISS hook AVX2
+[0.178 s] Creating schema
+[0.178 s] Preparing raw data
+[0.393 s] Creating sealed segment
+[0.393 s] Loading row ids for sealed segment
+[0.399 s] Loading timestamps for sealed segment
+[0.408 s] Loading raw data for sealed segment
+[0.917 s] Building index on 1000000 vectors
+[1.113 s] Loading index for sealed segment
+
+[1.134 s] sift-128-euclidean | FLAT 
+================================================================================
+  nq = 10000, k =  100, elapse = 36.180s, R@ = 0.9999
+================================================================================
+[37.383 s] Test 'sift-128-euclidean/FLAT' done
+
+[       OK ] Benchmark_segcore_float.TEST_IDMAP (37441 ms)
+[----------] 1 test from Benchmark_segcore_float (37441 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (37441 ms total)
+[  PASSED  ] 1 test.

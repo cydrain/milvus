@@ -1,0 +1,36 @@
+Running main() from /home/caiyd/vec/milvus/internal/core/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_segcore_float.TEST_HNSW
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_segcore_float
+[ RUN      ] Benchmark_segcore_float.TEST_HNSW
+[0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
+[0.000 s] Loading train data
+[0.223 s] Loading test data
+[0.224 s] Loading ground truth data
+2022-09-29 10:45:47,578 DEBUG [default] [caiyd@unknown-host] [char* milvus::segcore::SegcoreSetSimdType(const char*)] [/home/caiyd/vec/milvus/internal/core/src/segcore/segcore_init_c.cpp:45] [SEGCORE][SegcoreSetSimdType][benchmark_segco] set config simd_type: avx2
+2022-09-29 10:45:47,578 INFO [default] [KNOWHERE][SetSimdType][benchmark_segco] FAISS expect simdType::AVX2
+2022-09-29 10:45:47,578 INFO [default] [KNOWHERE][SetSimdType][benchmark_segco] FAISS hook AVX2
+[0.227 s] Creating schema
+[0.227 s] Preparing raw data
+[0.429 s] Creating sealed segment
+[0.429 s] Loading row ids for sealed segment
+[0.434 s] Loading timestamps for sealed segment
+[0.444 s] Loading raw data for sealed segment
+[0.907 s] Building index on 1000000 vectors
+[94.970 s] Loading index for sealed segment
+
+[94.986 s] sift-128-euclidean | HNSW | M=16 | efConstruction=200
+================================================================================
+  ef =  128, nq = 10000, k =  100, elapse =  0.737s, R@ = 0.9488
+  ef =  256, nq = 10000, k =  100, elapse =  1.303s, R@ = 0.9864
+  ef =  512, nq = 10000, k =  100, elapse =  2.299s, R@ = 0.9973
+================================================================================
+[99.534 s] Test 'sift-128-euclidean/HNSW' done
+
+[       OK ] Benchmark_segcore_float.TEST_HNSW (99595 ms)
+[----------] 1 test from Benchmark_segcore_float (99595 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (99595 ms total)
+[  PASSED  ] 1 test.
