@@ -15,6 +15,7 @@
 
 #include "common/Utils.h"
 #include "knowhere/common/Dataset.h"
+#include "knowhere/common/Timer.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
 #include "knowhere/utils/BitsetView.h"
@@ -79,7 +80,8 @@ ReGenRangeSearchResult(const knowhere::DatasetPtr res,
                        const float low_bound,
                        const float high_bound,
                        const faiss::BitsetView bitset) {
-    int64_t cnt = 0;
+    knowhere::TimeRecorder rc("ReGenRangeSearchResult");
+    int64_t valid = 0;
     int64_t* p_id = new int64_t[topk * nq];
     float* p_dist = new float[topk * nq];
 
@@ -89,17 +91,20 @@ ReGenRangeSearchResult(const knowhere::DatasetPtr res,
     auto lims = knowhere::GetDatasetLims(res);
     auto labels = knowhere::GetDatasetIDs(res);
     auto distances = knowhere::GetDatasetDistance(res);
+
+#pragma omp parallel for
     for (auto i = 0; i < nq; i++) {
-        if (metric_type == knowhere::metric::IP) {
-            cnt += GetRangeSearchResultForOneNq<true>(topk, lb, hb, lims[i + 1] - lims[i], distances + lims[i],
-                                                      labels + lims[i], p_dist + i * topk, p_id + i * topk, bitset);
+        if (IsMetricType(metric_type, knowhere::metric::IP)) {
+            valid += GetRangeSearchResultForOneNq<true>(topk, lb, hb, lims[i + 1] - lims[i], distances + lims[i],
+                                                        labels + lims[i], p_dist + i * topk, p_id + i * topk, bitset);
         } else {
-            cnt += GetRangeSearchResultForOneNq<false>(topk, lb, hb, lims[i + 1] - lims[i], distances + lims[i],
-                                                       labels + lims[i], p_dist + i * topk, p_id + i * topk, bitset);
+            valid += GetRangeSearchResultForOneNq<false>(topk, lb, hb, lims[i + 1] - lims[i], distances + lims[i],
+                                                         labels + lims[i], p_dist + i * topk, p_id + i * topk, bitset);
         }
     }
+    rc.ElapseFromBegin("done");
     LOG_SEGCORE_DEBUG_ << "Range search metric type: " << metric_type << ", radius (" << low_bound << ", " << high_bound
-                       << "), valid result num: " << cnt;
+                       << "), total result num: " << lims[nq] << ", valid result num: " << valid;
 
     return knowhere::GenResultDataset(p_id, p_dist);
 }

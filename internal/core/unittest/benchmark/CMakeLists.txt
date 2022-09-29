@@ -24,7 +24,7 @@ set(depend_libs
         hdf5
         )
 
-if ( LINUX AND ENABLE_PROFILING )
+if ( LINUX AND ENABLE_CPU_PROFILING )
     set( depend_libs
         ${depend_libs}
         gperftools

@@ -15,6 +15,11 @@
 #include "benchmark_segcore.h"
 #include "segcore/segcore_init_c.h"
 
+const float RADIUS_LOW_BOUND_IP = -1.0;
+const float RADIUS_HIGH_BOUND_IP = 1.0;
+const float RADIUS_LOW_BOUND_L2 = 0.0;
+const float RADIUS_HIGH_BOUND_L2 = 400.0;
+
 class Benchmark_segcore_float : public Benchmark_segcore {
  public:
     void
@@ -55,6 +60,51 @@ class Benchmark_segcore_float : public Benchmark_segcore {
     }
 
     void
+    test_idmap_range(const knowhere::Config& cfg) {
+        auto conf = cfg;
+
+        std::string dsl_fmt = R"({
+            "bool": {
+                "must": [{
+                    "vector": {
+                        "vec": {
+                            "metric_type": "%s",
+                            "query": "$0",
+                            "topk": %d,
+                            "round_decimal": 4,
+                            "params": {
+                                "nprobe": 1,
+                                "radius_low_bound": %f,
+                                "radius_high_bound": %f
+                            }
+                        }
+                    }
+                }]
+            }
+        })";
+
+        float low_bound = (metric_type_ == knowhere::metric::IP) ? RADIUS_LOW_BOUND_IP : RADIUS_LOW_BOUND_L2;
+        float high_bound = (metric_type_ == knowhere::metric::IP) ? RADIUS_HIGH_BOUND_IP : RADIUS_HIGH_BOUND_L2;
+        conf[RADIUS_LOW_BOUND] = low_bound;
+        conf[RADIUS_HIGH_BOUND] = high_bound;
+
+        printf("\n[%0.3f s] %s | %s, radius_low_bound = %.3f, radius_high_bound = %.3f \n", get_time_diff(),
+               ann_test_name_.c_str(), index_type_.c_str(), low_bound, high_bound);
+        printf("================================================================================\n");
+        for (auto nq : NQs_) {
+            for (auto k : TOPKs_) {
+                auto dsl = boost::format(dsl_fmt) % metric_type_.c_str() % k % low_bound % high_bound;
+                CALC_TIME_SPAN(auto result = Search(dsl.str(), nq, k, conf));
+                auto ids = result->seg_offsets_.data();
+                float recall = CalcRecall(ids, nq, k);
+                printf("  nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", nq, k, t_diff, recall);
+            }
+        }
+        printf("================================================================================\n");
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+    }
+
+    void
     test_ivf(const knowhere::Config& cfg) {
         auto conf = cfg;
         std::string nlist = conf[knowhere::indexparam::NLIST];
@@ -84,6 +134,56 @@ class Benchmark_segcore_float : public Benchmark_segcore {
             for (auto nq : NQs_) {
                 for (auto k : TOPKs_) {
                     auto dsl = boost::format(dsl_fmt) % metric_type_.c_str() % k % nprobe;
+                    CALC_TIME_SPAN(auto result = Search(dsl.str(), nq, k, conf));
+                    auto ids = result->seg_offsets_.data();
+                    float recall = CalcRecall(ids, nq, k);
+                    printf("  nprobe = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", nprobe, nq, k, t_diff,
+                           recall);
+                    std::fflush(stdout);
+                }
+            }
+        }
+        printf("================================================================================\n");
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+    }
+
+    void
+    test_ivf_range(const knowhere::Config& cfg) {
+        auto conf = cfg;
+        std::string nlist = conf[knowhere::indexparam::NLIST];
+
+        std::string dsl_fmt = R"({
+            "bool": {
+                "must": [{
+                    "vector": {
+                        "vec": {
+                            "metric_type": "%s",
+                            "query": "$0",
+                            "topk": %d,
+                            "round_decimal": 4,
+                            "params": {
+                                "nprobe": %d,
+                                "radius_low_bound": %f,
+                                "radius_high_bound": %f
+                            }
+                        }
+                    }
+                }]
+            }
+        })";
+
+        float low_bound = (metric_type_ == knowhere::metric::IP) ? RADIUS_LOW_BOUND_IP : RADIUS_LOW_BOUND_L2;
+        float high_bound = (metric_type_ == knowhere::metric::IP) ? RADIUS_HIGH_BOUND_IP : RADIUS_HIGH_BOUND_L2;
+        conf[RADIUS_LOW_BOUND] = low_bound;
+        conf[RADIUS_HIGH_BOUND] = high_bound;
+
+        printf("\n[%0.3f s] %s | %s | nlist=%s, radius_low_bound = %.3f, radius_high_bound = %.3f\n",
+               get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(), nlist.c_str(), low_bound, high_bound);
+        printf("================================================================================\n");
+        for (auto nprobe : NPROBEs_) {
+            for (auto nq : NQs_) {
+                for (auto k : TOPKs_) {
+                    auto dsl = boost::format(dsl_fmt) % metric_type_.c_str() % k % nprobe % low_bound % high_bound;
                     CALC_TIME_SPAN(auto result = Search(dsl.str(), nq, k, conf));
                     auto ids = result->seg_offsets_.data();
                     float recall = CalcRecall(ids, nq, k);
@@ -140,6 +240,61 @@ class Benchmark_segcore_float : public Benchmark_segcore {
         printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
     }
 
+    void
+    test_hnsw_range(const knowhere::Config& cfg) {
+        auto conf = cfg;
+        std::string M = conf[knowhere::indexparam::HNSW_M];
+        std::string efConstruction = conf[knowhere::indexparam::EFCONSTRUCTION];
+
+        std::string dsl_fmt = R"({
+            "bool": {
+                "must": [{
+                    "vector": {
+                        "vec": {
+                            "metric_type": "%s",
+                            "query": "$0",
+                            "topk": %d,
+                            "round_decimal": 4,
+                            "params": {
+                                "ef": %d,
+                                "range_k": %d,
+                                "radius_low_bound": %f,
+                                "radius_high_bound": %f
+                            }
+                        }
+                    }
+                }]
+            }
+        })";
+
+        float low_bound = (metric_type_ == knowhere::metric::IP) ? RADIUS_LOW_BOUND_IP : RADIUS_LOW_BOUND_L2;
+        float high_bound = (metric_type_ == knowhere::metric::IP) ? RADIUS_HIGH_BOUND_IP : RADIUS_HIGH_BOUND_L2;
+        conf[RADIUS_LOW_BOUND] = low_bound;
+        conf[RADIUS_HIGH_BOUND] = high_bound;
+
+        printf("\n[%0.3f s] %s | %s | M=%s | efConstruction=%s, radius_low_bound = %.3f, radius_high_bound = %.3f\n",
+               get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(), M.c_str(), efConstruction.c_str(),
+               low_bound, high_bound);
+        printf("================================================================================\n");
+        for (auto ef: EFs_) {
+            for (auto range_k : HNSW_Ks_) {
+                for (auto nq: NQs_) {
+                    for (auto k: TOPKs_) {
+                        auto dsl = boost::format(dsl_fmt) % metric_type_.c_str() % k % ef % range_k % low_bound % high_bound;
+                        CALC_TIME_SPAN(auto result = Search(dsl.str(), nq, k, conf));
+                        auto ids = result->seg_offsets_.data();
+                        float recall = CalcRecall(ids, nq, k);
+                        printf("  ef = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", ef, nq, k, t_diff,
+                               recall);
+                        std::fflush(stdout);
+                    }
+                }
+            }
+        }
+        printf("================================================================================\n");
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+    }
+
  protected:
     void
     SetUp() override {
@@ -180,6 +335,7 @@ class Benchmark_segcore_float : public Benchmark_segcore {
     const std::vector<int32_t> HNSW_Ms_ = {16};
     const std::vector<int32_t> EFCONs_ = {200};
     const std::vector<int32_t> EFs_ = {128, 256, 512};
+    const std::vector<int32_t> HNSW_Ks_ = {20};
 };
 
 TEST_F(Benchmark_segcore_float, TEST_IDMAP) {
@@ -188,6 +344,7 @@ TEST_F(Benchmark_segcore_float, TEST_IDMAP) {
     knowhere::Config conf = cfg_;
     CreateAndLoadSealedSegment(index_type_, vector_data_type_, conf);
     test_idmap(conf);
+    test_idmap_range(conf);
 }
 
 TEST_F(Benchmark_segcore_float, TEST_IVF_FLAT) {
@@ -198,6 +355,7 @@ TEST_F(Benchmark_segcore_float, TEST_IVF_FLAT) {
         conf[knowhere::indexparam::NLIST] = std::to_string(nlist);
         CreateAndLoadSealedSegment(index_type_, vector_data_type_, conf);
         test_ivf(conf);
+        test_ivf_range(conf);
     }
 }
 
@@ -209,6 +367,7 @@ TEST_F(Benchmark_segcore_float, TEST_IVF_SQ8) {
         conf[knowhere::indexparam::NLIST] = std::to_string(nlist);
         CreateAndLoadSealedSegment(index_type_, vector_data_type_, conf);
         test_ivf(conf);
+        test_ivf_range(conf);
     }
 }
 
@@ -223,6 +382,7 @@ TEST_F(Benchmark_segcore_float, TEST_IVF_PQ) {
             conf[knowhere::indexparam::NLIST] = std::to_string(nlist);
             CreateAndLoadSealedSegment(index_type_, vector_data_type_, conf);
             test_ivf(conf);
+            test_ivf_range(conf);
         }
     }
 }
@@ -237,6 +397,7 @@ TEST_F(Benchmark_segcore_float, TEST_HNSW) {
             conf[knowhere::indexparam::EFCONSTRUCTION] = std::to_string(efc);
             CreateAndLoadSealedSegment(index_type_, vector_data_type_, conf);
             test_hnsw(conf);
+            test_hnsw_range(conf);
         }
     }
 }
