@@ -47,6 +47,8 @@ SearchOnSealedIndex(const Schema& schema,
         knowhere::SetMetaMetricType(conf, field_indexing->metric_type_);
         auto vec_index = dynamic_cast<index::VectorIndex*>(field_indexing->indexing_.get());
         auto index_type = vec_index->GetIndexType();
+        std::cout << "CYD - index type: " << vec_index->GetIndexType() << std::endl;
+        std::cout << "CYD - row count: " << vec_index->Count() << std::endl;
         return vec_index->Query(ds, search_info, bitset);
     }();
 

@@ -343,6 +343,7 @@ SegmentSealedImpl::vector_search(SearchInfo& search_info,
     if (get_bit(index_ready_bitset_, field_id)) {
         AssertInfo(vector_indexings_.is_ready(field_id),
                    "vector indexes isn't ready for field " + std::to_string(field_id.get()));
+        std::cout << "CYD - SegmentSealedImpl::vector_search::SearchOnSealedIndex, bitset count: " << bitset.count() << std::endl;
         query::SearchOnSealedIndex(*schema_, vector_indexings_, search_info, query_data, query_count, bitset, output);
     } else {
         AssertInfo(get_bit(field_data_ready_bitset_, field_id),

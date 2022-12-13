@@ -106,7 +106,28 @@ ExecPlanNodeVisitor::VectorVisitorImpl(VectorPlanNode& node) {
     }
     BitsetView final_view = *bitset_holder;
     segment->vector_search(node.search_info_, src_data, num_queries, timestamp_, final_view, search_result);
-
+    {
+        std::fflush(stdout);
+        static std::mutex mu;
+        std::lock_guard<std::mutex> lock(mu);
+        auto nq = search_result.total_nq_;
+        auto k = search_result.unity_topK_;
+        auto count = final_view.count();
+        std::cout << "CYD - nq = " << nq << ", k = " << k << ", bitset count = " << count << std::endl;
+        for (int i = 0; i < count; i++) {
+            if (final_view.test(i)) continue;
+            std::cout << "valid bitset: " << i << std::endl;
+        }
+        for (int i = 0; i < nq; i++) {
+            std::cout << "  === No. " << i << " ===" << std::endl;
+            for (int j = 0; j < 1; j++) {
+                auto idx = i * k + j;
+                std::cout << "    {" << search_result.seg_offsets_[idx] << ", "
+                          << search_result.distances_[idx] << "} " << std::endl;
+            }
+        }
+        std::fflush(stdout);
+    }
     search_result_opt_ = std::move(search_result);
 }
 
