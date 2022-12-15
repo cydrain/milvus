@@ -34,6 +34,16 @@ var (
 			nodeIDLabelName,
 		})
 
+	QueryNodeNumCollectionsCreatedByCYD = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: milvusNamespace,
+			Subsystem: typeutil.QueryNodeRole,
+			Name:      "collection_num_created_by_cyd",
+			Help:      "number of collections created by cyd",
+		}, []string{
+			nodeIDLabelName,
+		})
+
 	QueryNodeConsumeTimeTickLag = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: milvusNamespace,
@@ -348,6 +358,7 @@ var (
 // RegisterQueryNode registers QueryNode metrics
 func RegisterQueryNode(registry *prometheus.Registry) {
 	registry.MustRegister(QueryNodeNumCollections)
+	registry.MustRegister(QueryNodeNumCollectionsCreatedByCYD)
 	registry.MustRegister(QueryNodeNumPartitions)
 	registry.MustRegister(QueryNodeNumSegments)
 	registry.MustRegister(QueryNodeNumDmlChannels)
