@@ -209,7 +209,6 @@ func (replica *metaReplica) addCollection(collectionID UniqueID, schema *schemap
 	var newC = newCollection(collectionID, schema)
 	replica.collections[collectionID] = newC
 	metrics.QueryNodeNumCollections.WithLabelValues(fmt.Sprint(paramtable.GetNodeID())).Set(float64(len(replica.collections)))
-	metrics.QueryNodeNumCollectionsCreatedByCYD.WithLabelValues(fmt.Sprint(paramtable.GetNodeID())).Add(float64(1))
 	return newC
 }
 

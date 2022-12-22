@@ -342,6 +342,7 @@ func (s *Segment) search(ctx context.Context, searchReq *searchRequest) (*Search
 	status := C.Search(s.segmentPtr, searchReq.plan.cSearchPlan, searchReq.cPlaceholderGroup,
 		C.uint64_t(searchReq.timestamp), &searchResult.cSearchResult)
 	metrics.QueryNodeSQSegmentLatencyInCore.WithLabelValues(fmt.Sprint(paramtable.GetNodeID()), metrics.SearchLabel).Observe(float64(tr.ElapseSpan().Milliseconds()))
+	updateSegcoreMetricsForSearch()
 	if err := HandleCStatus(&status, "Search failed"); err != nil {
 		return nil, err
 	}

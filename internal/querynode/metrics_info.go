@@ -16,8 +16,17 @@
 
 package querynode
 
+/*
+#cgo pkg-config: milvus_segcore
+
+#include "segcore/metric_c.h"
+*/
+import "C"
+
 import (
 	"context"
+	"fmt"
+	"github.com/milvus-io/milvus/internal/metrics"
 
 	"github.com/milvus-io/milvus-proto/go-api/commonpb"
 	"github.com/milvus-io/milvus-proto/go-api/milvuspb"
@@ -128,4 +137,9 @@ func getSystemInfoMetrics(ctx context.Context, req *milvuspb.GetMetricsRequest, 
 		Response:      resp,
 		ComponentName: metricsinfo.ConstructComponentName(typeutil.QueryNodeRole, paramtable.GetNodeID()),
 	}, nil
+}
+
+func updateSegcoreMetricsForSearch() {
+	num := C.GetNumOfDiskIO()
+	metrics.QueryNodeNumDiskIOByCYD.WithLabelValues(fmt.Sprint(paramtable.GetNodeID())).Set(float64(num))
 }
