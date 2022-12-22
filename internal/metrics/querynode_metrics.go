@@ -34,12 +34,12 @@ var (
 			nodeIDLabelName,
 		})
 
-	QueryNodeNumCollectionsCreatedByCYD = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	QueryNodeNumDiskIOByCYD = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
 			Namespace: milvusNamespace,
 			Subsystem: typeutil.QueryNodeRole,
-			Name:      "collection_num_created_by_cyd",
-			Help:      "number of collections created by cyd",
+			Name:      "disk_io_num_by_cyd",
+			Help:      "number of disk IO by cyd",
 		}, []string{
 			nodeIDLabelName,
 		})
@@ -358,7 +358,7 @@ var (
 // RegisterQueryNode registers QueryNode metrics
 func RegisterQueryNode(registry *prometheus.Registry) {
 	registry.MustRegister(QueryNodeNumCollections)
-	registry.MustRegister(QueryNodeNumCollectionsCreatedByCYD)
+	registry.MustRegister(QueryNodeNumDiskIOByCYD)
 	registry.MustRegister(QueryNodeNumPartitions)
 	registry.MustRegister(QueryNodeNumSegments)
 	registry.MustRegister(QueryNodeNumDmlChannels)
