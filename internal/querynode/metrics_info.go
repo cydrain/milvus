@@ -26,7 +26,9 @@ import "C"
 import (
 	"context"
 	"fmt"
+	"github.com/milvus-io/milvus/internal/log"
 	"github.com/milvus-io/milvus/internal/metrics"
+	"go.uber.org/zap"
 
 	"github.com/milvus-io/milvus-proto/go-api/commonpb"
 	"github.com/milvus-io/milvus-proto/go-api/milvuspb"
@@ -142,4 +144,7 @@ func getSystemInfoMetrics(ctx context.Context, req *milvuspb.GetMetricsRequest, 
 func updateSegcoreMetricsForSearch() {
 	num := C.GetNumOfDiskIO()
 	metrics.QueryNodeNumDiskIOByCYD.WithLabelValues(fmt.Sprint(paramtable.GetNodeID())).Set(float64(num))
+
+	knowhereMetrics := C.GoString(C.GetKnowhereAllMetrics())
+	log.Warn("CYD - Get knowhere all metrics", zap.String("metrics", knowhereMetrics))
 }

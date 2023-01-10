@@ -18,6 +18,9 @@ extern "C" {
 int64_t
 GetNumOfDiskIO();
 
+char*
+GetKnowhereAllMetrics();
+
 #ifdef __cplusplus
 }
 #endif

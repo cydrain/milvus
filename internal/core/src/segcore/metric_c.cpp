@@ -10,6 +10,7 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License
 
 #include "knowhere/common/Indicator.h"
+#include "knowhere/metrics/Prometheus.h"
 #include "log/Log.h"
 #include "segcore/metric_c.h"
 
@@ -17,5 +18,16 @@ int64_t
 GetNumOfDiskIO() {
     auto res = knowhere::IndicatorCollector::GetInstance().Get(knowhere::IndicatorType::DISK_IO_NUM).Get();
     LOG_SEGCORE_DEBUG_ << "CYD - segcore get disk IO num " << res;
+    return res;
+}
+
+char*
+GetKnowhereAllMetrics() {
+    auto str = knowhere::Prometheus::GetInstance().GetMetrics();
+    LOG_SEGCORE_DEBUG_ << "CYD - segcore get knowhere all metrics:\n" << str;
+    size_t len = str.length();
+    char* res = (char*)malloc(len + 1);
+    std::memset(res, 0, len + 1);
+    std::memcpy(res, str.data(), len);
     return res;
 }
