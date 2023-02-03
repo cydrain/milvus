@@ -38,7 +38,8 @@ message( STATUS "Thirdparty downloaded file path: ${THIRDPARTY_DOWNLOAD_PATH}" )
 set( THREADS_PREFER_PTHREAD_FLAG ON )
 find_package( Threads REQUIRED )
 
-add_subdirectory( knowhere )
+# add_subdirectory( knowhere )
+add_subdirectory( knowhere2 )
 
 add_subdirectory( boost_ext )
 add_subdirectory( rocksdb )
