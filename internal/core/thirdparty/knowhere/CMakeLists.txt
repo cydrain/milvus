@@ -78,6 +78,28 @@ macro(build_knowhere)
                 INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
     endif ()
 
+    add_library(prometheus-core STATIC IMPORTED)
+    set_target_properties( prometheus-core
+            PROPERTIES
+            IMPORTED_LOCATION   ${INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}prometheus-cpp-core${CMAKE_STATIC_LIBRARY_SUFFIX}
+            INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
+
+    add_library(prometheus-pull STATIC IMPORTED)
+    set_target_properties( prometheus-pull
+            PROPERTIES
+            IMPORTED_LOCATION   ${INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}prometheus-cpp-pull${CMAKE_STATIC_LIBRARY_SUFFIX}
+            INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
+
+    add_library(prometheus-push STATIC IMPORTED)
+    set_target_properties( prometheus-push
+            PROPERTIES
+            IMPORTED_LOCATION   ${INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}prometheus-cpp-push${CMAKE_STATIC_LIBRARY_SUFFIX}
+            INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
+    target_link_libraries( knowhere
+        INTERFACE   prometheus-core
+                    prometheus-push
+                    prometheus-pull)
+
     add_dependencies(knowhere knowhere_ep)
 endmacro()
 
