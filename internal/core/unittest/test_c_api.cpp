@@ -26,6 +26,7 @@
 #include "pb/plan.pb.h"
 #include "query/ExprImpl.h"
 #include "segcore/Collection.h"
+#include "segcore/metrics.h"
 #include "segcore/reduce_c.h"
 #include "segcore/Reduce.h"
 #include "test_utils/DataGen.h"
@@ -855,6 +856,9 @@ TEST(CApiTest, SearchTest) {
     CSearchResult search_result2;
     auto res2 = Search(segment, plan, placeholderGroup, ts_offset, &search_result2);
     ASSERT_EQ(res2.error_code, Success);
+
+    std::string str = knowhere::PrometheusMetrics::GetInstance().GetMetrics();
+    std::cout << "CYD - " << str << std::endl;
 
     DeleteSearchPlan(plan);
     DeletePlaceholderGroup(placeholderGroup);

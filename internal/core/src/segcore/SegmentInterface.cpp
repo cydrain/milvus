@@ -14,6 +14,7 @@
 #include "common/SystemProperty.h"
 #include "common/Types.h"
 #include "query/generated/ExecPlanNodeVisitor.h"
+#include "metrics.h"
 #include "Utils.h"
 
 namespace milvus::segcore {
@@ -57,6 +58,7 @@ SegmentInternalInterface::Search(const query::Plan* plan,
                                  const query::PlaceholderGroup* placeholder_group,
                                  Timestamp timestamp) const {
     std::shared_lock lck(mutex_);
+    segcore_search_counter.Increment();
     check_search(plan);
     query::ExecPlanNodeVisitor visitor(*this, timestamp, placeholder_group);
     auto results = std::make_unique<SearchResult>();
