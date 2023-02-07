@@ -35,10 +35,10 @@ set( CMAKE_PREFIX_PATH ${CONAN_BOOST_ROOT} )
 set( BUILD_UNIT_TEST  OFF )
 FetchContent_Declare(
         knowhere
-        # GIT_REPOSITORY  "https://github.com/milvus-io/knowhere.git"
-        # GIT_TAG         main
-        URL             ${KNOWHERE_SOURCE_URL}
-        URL_MD5         ${KNOWHERE_SOURCE_MD5}
+        GIT_REPOSITORY  "https://github.com/cydrain/knowhere.git"
+        GIT_TAG         caiyd_support_metrics_sol2_prometheus_0207
+        #URL             ${KNOWHERE_SOURCE_URL}
+        #URL_MD5         ${KNOWHERE_SOURCE_MD5}
         SOURCE_DIR      ${CMAKE_CURRENT_BINARY_DIR}/knowhere-src
         BINARY_DIR      ${CMAKE_CURRENT_BINARY_DIR}/knowhere-build
         DOWNLOAD_DIR    ${THIRDPARTY_DOWNLOAD_PATH} )

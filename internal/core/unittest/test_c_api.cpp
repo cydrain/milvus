@@ -26,6 +26,7 @@
 #include "pb/plan.pb.h"
 #include "query/ExprImpl.h"
 #include "segcore/Collection.h"
+#include "segcore/metric_c.h"
 #include "segcore/reduce_c.h"
 #include "segcore/Reduce.h"
 #include "test_utils/DataGen.h"
@@ -217,6 +218,9 @@ generate_index(
 TEST(CApiTest, CollectionTest) {
     auto collection = NewCollection(get_default_schema_config());
     DeleteCollection(collection);
+    auto s = GetKnowhereAllMetrics();
+    std::cout << s<< std::endl;
+    free(s);
 }
 
 TEST(CApiTest, GetCollectionNameTest) {
