@@ -857,7 +857,7 @@ TEST(CApiTest, SearchTest) {
     auto res2 = Search(segment, plan, placeholderGroup, ts_offset, &search_result2);
     ASSERT_EQ(res2.error_code, Success);
 
-    std::string str = knowhere::PrometheusMetrics::GetInstance().GetMetrics();
+    std::string str = knowhere::prometheusClient->GetMetrics();
     std::cout << "CYD - " << str << std::endl;
 
     DeleteSearchPlan(plan);

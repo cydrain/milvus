@@ -9,14 +9,14 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License
 
-#include "knowhere/metrics/PrometheusMetrics.h"
+#include "knowhere/metrics/PrometheusClient.h"
 
 namespace milvus::segcore {
 
 ::prometheus::Family<::prometheus::Counter>&
         segcore_search = ::prometheus::BuildCounter().Name("cyd_segcore_search")
                                                      .Help("total search num in segcore")
-                                                     .Register(knowhere::PrometheusMetrics::GetInstance().GetRegistry());
+                                                     .Register(*knowhere::prometheusClient->GetRegistry());
 ::prometheus::Counter& segcore_search_counter = segcore_search.Add({});
 
 }

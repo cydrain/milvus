@@ -10,6 +10,7 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License
 
 #include "config/ConfigKnowhere.h"
+#include "knowhere/metrics/PrometheusClient.h"
 #include "log/Log.h"
 #include "segcore/SegcoreConfig.h"
 #include "segcore/segcore_init_c.h"
@@ -18,6 +19,8 @@ namespace milvus::segcore {
 extern "C" void
 SegcoreInit(const char* conf_file) {
     milvus::config::KnowhereInitImpl(conf_file);
+    std::cout << "CYD - " << knowhere::prometheusClient->GetMetrics() << std::endl;
+    knowhere::prometheusClient->Expose();
 }
 
 // TODO merge small index config into one config map, including enable/disable small_index

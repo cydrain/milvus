@@ -9,13 +9,17 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License
 
+#include <iostream>
 #include <string.h>
 #include "config/ConfigKnowhere.h"
 #include "indexbuilder/init_c.h"
+#include "knowhere/metrics/PrometheusClient.h"
 
 void
 IndexBuilderInit(const char* conf_file) {
     milvus::config::KnowhereInitImpl(conf_file);
+    std::cout << "CYD - " << knowhere::prometheusClient->GetMetrics() << std::endl;
+    knowhere::prometheusClient->Expose();
 }
 
 // return value must be freed by the caller
