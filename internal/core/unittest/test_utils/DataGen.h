@@ -713,6 +713,10 @@ GenRandomIds(int rows, int64_t seed = 42) {
     std::mt19937 g(seed);
     auto* ids = new int64_t[rows];
     for (int i = 0; i < rows; ++i) ids[i] = i;
+    for (int i = 0; i < rows; ++i) {
+        ids[i] = 500000 * (float(random()) / RAND_MAX);
+        //  std::cout << ids[i] << std::endl;
+    }
     std::shuffle(ids, ids + rows, g);
     auto ids_ds = GenIdsDataset(rows, ids);
     ids_ds->SetIsOwner(true);

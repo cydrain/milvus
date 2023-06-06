@@ -30,6 +30,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"time"
 	"unsafe"
 
 	"github.com/milvus-io/milvus/pkg/common"
@@ -406,6 +407,7 @@ func (s *LocalSegment) Retrieve(ctx context.Context, plan *RetrievePlan) (*segco
 	s.mut.RLock()
 	defer s.mut.RUnlock()
 
+	start := time.Now()
 	if s.ptr == nil {
 		return nil, WrapSegmentReleased(s.segmentID)
 	}
@@ -454,8 +456,10 @@ func (s *LocalSegment) Retrieve(ctx context.Context, plan *RetrievePlan) (*segco
 		return nil, err
 	}
 
+	cost := time.Since(start).Microseconds()
 	log.Debug("retrieve segment done",
 		zap.Int("resultNum", len(result.Offset)),
+		zap.Int64("costxxx", cost),
 	)
 
 	sort.Sort(&byPK{result})

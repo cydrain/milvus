@@ -165,12 +165,18 @@ ExecPlanNodeVisitor::visit(RetrievePlanNode& node) {
         bitset_holder.resize(active_count);
     }
 
+    auto start = std::chrono::steady_clock::now();
     if (node.predicate_.has_value() && node.predicate_.value() != nullptr) {
         bitset_holder =
             ExecExprVisitor(*segment, this, active_count, timestamp_)
                 .call_child(*(node.predicate_.value()));
         bitset_holder.flip();
     }
+    std::cout << "expr cost:"
+              << std::chrono::duration_cast<std::chrono::microseconds>(
+                     std::chrono::steady_clock::now() - start)
+                     .count()
+              << "us" << std::endl;
 
     segment->mask_with_timestamps(bitset_holder, timestamp_);
 
@@ -188,12 +194,18 @@ ExecPlanNodeVisitor::visit(RetrievePlanNode& node) {
         return;
     }
 
+    start = std::chrono::steady_clock::now();
     BitsetView final_view = bitset_holder;
     auto seg_offsets =
         GetExprUsePkIndex() && IsTermExpr(node.predicate_.value().get())
             ? segment->search_ids(
                   final_view, expr_cached_pk_id_offsets_, timestamp_)
             : segment->search_ids(bitset_holder.flip(), timestamp_);
+    std::cout << "search id cost:"
+              << std::chrono::duration_cast<std::chrono::microseconds>(
+                     std::chrono::steady_clock::now() - start)
+                     .count()
+              << "us" << std::endl;
     retrieve_result.result_offsets_.assign(
         (int64_t*)seg_offsets.data(),
         (int64_t*)seg_offsets.data() + seg_offsets.size());
