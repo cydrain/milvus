@@ -32,6 +32,8 @@
 using namespace boost::filesystem;
 #endif
 
+#include "gperftools/profiler.h"
+
 using namespace milvus;
 using namespace milvus::segcore;
 
@@ -457,7 +459,7 @@ TEST_P(IndexTest, IndexGetVector) {
     create_index_info.field_type = vec_field_data_type;
     index::IndexBasePtr index;
 
-    SegcoreSetKnowhereThreadPoolNum(48);
+    SegcoreSetKnowhereThreadPoolNum(12);
     if (index_type == knowhere::IndexEnum::INDEX_DISKANN) {
 #ifdef BUILD_DISK_ANN
         milvus::storage::FieldDataMeta field_data_meta{1, 2, 3, 100};
@@ -518,11 +520,16 @@ TEST_P(IndexTest, IndexGetVector) {
     };
 
     auto test_case = [&vec_index](int thread_num, int randomids) {
-        for (int j = 0; j < 1000; j++) {
+        int64_t span_min = std::numeric_limits<int64_t>::max();
+        int64_t span_max = std::numeric_limits<int64_t>::min();
+        int64_t run_id_min = -1, run_id_max = -1;
+        for (int j = 0; j < 200; j++) {
             auto thread_function =
-                [](milvus::index::VectorIndex* index,
-                   std::shared_ptr<knowhere::DataSet> ids_ds) {
+                [](int idx, milvus::index::VectorIndex* index, std::shared_ptr<knowhere::DataSet> ids_ds) {
+                    //std::string name = "/tmp/thread_run_" + std::to_string(idx) + ".prof";
+                    //ProfilerStart(name.c_str());
                     index->GetVector(ids_ds);
+                    //ProfilerStop();
                     std::this_thread::sleep_for(std::chrono::milliseconds(300));
                 };
             std::vector<std::shared_ptr<knowhere::DataSet>> idss;
@@ -530,71 +537,38 @@ TEST_P(IndexTest, IndexGetVector) {
                 idss.push_back(GenRandomIds(randomids));
             }
             std::vector<std::thread> threads;
-            auto start = std::chrono::steady_clock::now();
+            auto t0 = std::chrono::steady_clock::now();
             for (int i = 0; i < thread_num; ++i) {
                 threads.push_back(
-                    std::thread(thread_function, vec_index, idss[i]));
+                    std::thread(thread_function, j, vec_index, idss[i]));
             }
 
             for (int i = 0; i < thread_num; ++i) {
                 threads[i].join();
             }
-            std::cout << "testxxxx thread num:" << thread_num
-                      << " ids:" << randomids << " cost:"
-                      << std::chrono::duration_cast<std::chrono::microseconds>(
-                             std::chrono::steady_clock::now() - start)
-                             .count();
-        }
-    };
-    while (1) {
-        test_case(1, 50);
-        sleep(10);
-        //test_case(10, 50);
-        //         auto ids_ds = GenRandomIds(10000);
-        //         auto start = std::chrono::steady_clock::now();
-        //         // auto results = vec_index->GetVector(ids_ds);
-        // #define thread_num 2
-        //         std::vector<std::shared_ptr<knowhere::DataSet>> idss;
-        //         for (int i = 0; i < thread_num; ++i) {
-        //             idss.push_back(GenRandomIds(50));
-        //         }
-        //         std::thread threads[thread_num];
-        //         for (int i = 0; i < thread_num; ++i) {
-        //             threads[i] = std::thread(thread_function, vec_index, idss[i]);
-        //         }
 
-        //         for (int i = 0; i < thread_num; ++i) {
-        //             threads[i].join();
-        //         }
-        //         std::cout << "testxxxx"
-        //                   << std::chrono::duration_cast<std::chrono::microseconds>(
-        //                          std::chrono::steady_clock::now() - start)
-        //                          .count()
-        //                   << std::endl;
-    }
-    // EXPECT_TRUE(results.size() > 0);
-    // if (!is_binary) {
-    //     std::vector<float> result_vectors(results.size() / (sizeof(float)));
-    //     memcpy(result_vectors.data(), results.data(), results.size());
-    //     EXPECT_TRUE(result_vectors.size() == xb_data.size());
-    //     for (size_t i = 0; i < NB; ++i) {
-    //         auto id = ids_ds->GetIds()[i];
-    //         for (size_t j = 0; j < DIM; ++j) {
-    //             EXPECT_TRUE(result_vectors[i * DIM + j] ==
-    //                         xb_data[id * DIM + j]);
-    //         }
-    //     }
-    // } else {
-    //     EXPECT_TRUE(results.size() == xb_bin_data.size());
-    //     const auto data_bytes = DIM / 8;
-    //     for (size_t i = 0; i < NB; ++i) {
-    //         auto id = ids_ds->GetIds()[i];
-    //         for (size_t j = 0; j < data_bytes; ++j) {
-    //             EXPECT_TRUE(results[i * data_bytes + j] ==
-    //                         xb_bin_data[id * data_bytes + j]);
-    //         }
-    //     }
-    // }
+            auto t1 = std::chrono::steady_clock::now();
+            auto span = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
+            std::cout << "testxxxx run:" << j << " ids:" << randomids << " cost:" << span;
+
+            if (span > span_max) {
+                span_max = span;
+                run_id_max = j;
+            }
+            if (span < span_min) {
+                span_min = span;
+                run_id_min = j;
+            }
+        }
+        std::cout << std::endl;
+        std::cout << "min run: " << run_id_min << " cost: " << span_min << std::endl;
+        std::cout << "max run: " << run_id_max << " cost: " << span_max << std::endl;
+    };
+
+    test_case(1, 300000);
+    // sleep(30);
+    test_case(1, 300000);
+    test_case(1, 50);
 }
 
 // #ifdef BUILD_DISK_ANN
