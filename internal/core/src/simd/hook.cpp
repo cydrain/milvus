@@ -85,25 +85,25 @@ bitset_hook() {
     std::lock_guard<std::mutex> lock(hook_mutex);
     std::string simd_type = "REF";
 #if defined(__x86_64__)
-    if (use_avx512 && cpu_support_avx512()) {
-        simd_type = "AVX512";
-        // For now, sse2 has best performance
-        get_bitset_block = GetBitsetBlockSSE2;
-        use_bitset_sse2 = true;
-    } else if (use_avx2 && cpu_support_avx2()) {
-        simd_type = "AVX2";
-        // For now, sse2 has best performance
-        get_bitset_block = GetBitsetBlockSSE2;
-        use_bitset_sse2 = true;
-    } else if (use_sse4_2 && cpu_support_sse4_2()) {
-        simd_type = "SSE4";
-        get_bitset_block = GetBitsetBlockSSE2;
-        use_bitset_sse2 = true;
-    } else if (use_sse2 && cpu_support_sse2()) {
-        simd_type = "SSE2";
-        get_bitset_block = GetBitsetBlockSSE2;
-        use_bitset_sse2 = true;
-    }
+//    if (use_avx512 && cpu_support_avx512()) {
+//        simd_type = "AVX512";
+//        // For now, sse2 has best performance
+//        get_bitset_block = GetBitsetBlockSSE2;
+//        use_bitset_sse2 = true;
+//    } else if (use_avx2 && cpu_support_avx2()) {
+//        simd_type = "AVX2";
+//        // For now, sse2 has best performance
+//        get_bitset_block = GetBitsetBlockSSE2;
+//        use_bitset_sse2 = true;
+//    } else if (use_sse4_2 && cpu_support_sse4_2()) {
+//        simd_type = "SSE4";
+//        get_bitset_block = GetBitsetBlockSSE2;
+//        use_bitset_sse2 = true;
+//    } else if (use_sse2 && cpu_support_sse2()) {
+//        simd_type = "SSE2";
+//        get_bitset_block = GetBitsetBlockSSE2;
+//        use_bitset_sse2 = true;
+//    }
 #endif
     // TODO: support arm cpu
     LOG_SEGCORE_INFO_ << "bitset hook simd type: " << simd_type;
@@ -115,47 +115,47 @@ find_term_hook() {
     std::lock_guard<std::mutex> lock(hook_mutex);
     std::string simd_type = "REF";
 #if defined(__x86_64__)
-    if (use_avx512 && cpu_support_avx512()) {
-        simd_type = "AVX512";
-        find_term_bool = FindTermAVX512<bool>;
-        find_term_int8 = FindTermAVX512<int8_t>;
-        find_term_int16 = FindTermAVX512<int16_t>;
-        find_term_int32 = FindTermAVX512<int32_t>;
-        find_term_int64 = FindTermAVX512<int64_t>;
-        find_term_float = FindTermAVX512<float>;
-        find_term_double = FindTermAVX512<double>;
-        use_find_term_avx512 = true;
-    } else if (use_avx2 && cpu_support_avx2()) {
-        simd_type = "AVX2";
-        find_term_bool = FindTermAVX2<bool>;
-        find_term_int8 = FindTermAVX2<int8_t>;
-        find_term_int16 = FindTermAVX2<int16_t>;
-        find_term_int32 = FindTermAVX2<int32_t>;
-        find_term_int64 = FindTermAVX2<int64_t>;
-        find_term_float = FindTermAVX2<float>;
-        find_term_double = FindTermAVX2<double>;
-        use_find_term_avx2 = true;
-    } else if (use_sse4_2 && cpu_support_sse4_2()) {
-        simd_type = "SSE4";
-        find_term_bool = FindTermSSE4<bool>;
-        find_term_int8 = FindTermSSE4<int8_t>;
-        find_term_int16 = FindTermSSE4<int16_t>;
-        find_term_int32 = FindTermSSE4<int32_t>;
-        find_term_int64 = FindTermSSE4<int64_t>;
-        find_term_float = FindTermSSE4<float>;
-        find_term_double = FindTermSSE4<double>;
-        use_find_term_sse4_2 = true;
-    } else if (use_sse2 && cpu_support_sse2()) {
-        simd_type = "SSE2";
-        find_term_bool = FindTermSSE2<bool>;
-        find_term_int8 = FindTermSSE2<int8_t>;
-        find_term_int16 = FindTermSSE2<int16_t>;
-        find_term_int32 = FindTermSSE2<int32_t>;
-        find_term_int64 = FindTermSSE2<int64_t>;
-        find_term_float = FindTermSSE2<float>;
-        find_term_double = FindTermSSE2<double>;
-        use_find_term_sse2 = true;
-    }
+//    if (use_avx512 && cpu_support_avx512()) {
+//        simd_type = "AVX512";
+//        find_term_bool = FindTermAVX512<bool>;
+//        find_term_int8 = FindTermAVX512<int8_t>;
+//        find_term_int16 = FindTermAVX512<int16_t>;
+//        find_term_int32 = FindTermAVX512<int32_t>;
+//        find_term_int64 = FindTermAVX512<int64_t>;
+//        find_term_float = FindTermAVX512<float>;
+//        find_term_double = FindTermAVX512<double>;
+//        use_find_term_avx512 = true;
+//    } else if (use_avx2 && cpu_support_avx2()) {
+//        simd_type = "AVX2";
+//        find_term_bool = FindTermAVX2<bool>;
+//        find_term_int8 = FindTermAVX2<int8_t>;
+//        find_term_int16 = FindTermAVX2<int16_t>;
+//        find_term_int32 = FindTermAVX2<int32_t>;
+//        find_term_int64 = FindTermAVX2<int64_t>;
+//        find_term_float = FindTermAVX2<float>;
+//        find_term_double = FindTermAVX2<double>;
+//        use_find_term_avx2 = true;
+//    } else if (use_sse4_2 && cpu_support_sse4_2()) {
+//        simd_type = "SSE4";
+//        find_term_bool = FindTermSSE4<bool>;
+//        find_term_int8 = FindTermSSE4<int8_t>;
+//        find_term_int16 = FindTermSSE4<int16_t>;
+//        find_term_int32 = FindTermSSE4<int32_t>;
+//        find_term_int64 = FindTermSSE4<int64_t>;
+//        find_term_float = FindTermSSE4<float>;
+//        find_term_double = FindTermSSE4<double>;
+//        use_find_term_sse4_2 = true;
+//    } else if (use_sse2 && cpu_support_sse2()) {
+//        simd_type = "SSE2";
+//        find_term_bool = FindTermSSE2<bool>;
+//        find_term_int8 = FindTermSSE2<int8_t>;
+//        find_term_int16 = FindTermSSE2<int16_t>;
+//        find_term_int32 = FindTermSSE2<int32_t>;
+//        find_term_int64 = FindTermSSE2<int64_t>;
+//        find_term_float = FindTermSSE2<float>;
+//        find_term_double = FindTermSSE2<double>;
+//        use_find_term_sse2 = true;
+//    }
 #endif
     // TODO: support arm cpu
     LOG_SEGCORE_INFO_ << "find term hook simd type: " << simd_type;
