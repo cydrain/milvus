@@ -12,6 +12,7 @@
 #include "SegmentInterface.h"
 
 #include <cstdint>
+#include <iomanip>
 
 #include "Utils.h"
 #include "common/EasyAssert.h"
@@ -75,6 +76,23 @@ SegmentInternalInterface::Search(
     auto results = std::make_unique<SearchResult>();
     *results = visitor.get_moved_result(*plan->plan_node_);
     results->segment_ = (void*)this;
+
+//    {
+//        static std::mutex mut;
+//        std::lock_guard<std::mutex> lock(mut);
+//        LOG_SEGCORE_INFO_ << "CYD =========================";
+//        std::setprecision(10);
+//        for (int64_t i = 0; i < results->total_nq_; i++) {
+//            for (int64_t j = 0; j < results->unity_topK_; j++) {
+//                char buf[256] = {'\0'};
+//                if (results->seg_offsets_[j] != -1) {
+//                    auto pk = results->primary_keys_[j];
+//                    sprintf(buf, "CYD - No.%05ld %06ld ", j, std::get<int64_t>(pk));
+//                    LOG_SEGCORE_INFO_ << buf << std::setprecision(10) << results->distances_[j];
+//                }
+//            }
+//        }
+//    }
     return results;
 }
 

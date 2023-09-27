@@ -901,6 +901,12 @@ func reduceSearchResultData(ctx context.Context, subSearchResultData []*schemapb
 			ret.Results.Scores[k] *= -1
 		}
 	}
+	log.Info("CYD - proxy =====================================")
+	for ii := int64(0); ii < ret.Results.TopK; ii++ {
+		log.Info("CYD - proxy:", zap.Int64("No.", ii),
+			zap.Int64("id", ret.Results.GetIds().GetIntId().GetData()[ii]),
+			zap.Float32("distance", ret.Results.Scores[ii]))
+	}
 	return ret, nil
 }
 

@@ -166,6 +166,23 @@ ReduceHelper::RefreshSearchResult() {
         std::partial_sum(real_topks.begin(),
                          real_topks.end(),
                          search_result->topk_per_nq_prefix_sum_.begin() + 1);
+
+        {
+            static std::mutex mut;
+            std::lock_guard<std::mutex> lock(mut);
+            LOG_SEGCORE_INFO_ << "CYD ========================= seg " << i;
+            std::setprecision(10);
+            auto start = search_result->topk_per_nq_prefix_sum_[0];
+            auto end = search_result->topk_per_nq_prefix_sum_[1];
+            for (int64_t k = start; k < end; k++) {
+                char buf[256] = {'\0'};
+                if (search_result->seg_offsets_[k] != -1) {
+                    sprintf(buf, "CYD - No.%05ld %06ld %06ld ", k, search_result->seg_offsets_[k],
+                            std::get<int64_t>(search_result->primary_keys_[k]));
+                    LOG_SEGCORE_INFO_ << buf << std::setprecision(10) << search_result->distances_[k];
+                }
+            }
+        }
     }
 }
 
