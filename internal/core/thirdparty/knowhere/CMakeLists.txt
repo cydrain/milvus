@@ -12,8 +12,8 @@
 #-------------------------------------------------------------------------------
 
 # Update KNOWHERE_VERSION for the first occurrence
-set( KNOWHERE_VERSION f4c1757 )
-set( GIT_REPOSITORY  "https://github.com/zilliztech/knowhere.git")
+set( KNOWHERE_VERSION caiyd_debug_3rd_add_range_filter )
+set( GIT_REPOSITORY  "https://github.com/cydrain/knowhere.git")
 if ( INDEX_ENGINE STREQUAL "cardinal" )
     set( KNOWHERE_VERSION main )
     set( GIT_REPOSITORY  "https://github.com/zilliztech/knowhere-cloud.git")
