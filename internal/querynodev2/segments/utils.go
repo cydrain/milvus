@@ -190,6 +190,42 @@ func fillFloatVecFieldData(ctx context.Context, vcm storage.ChunkManager, dataPa
 	return nil
 }
 
+func fillFloat16VecFieldData(ctx context.Context, vcm storage.ChunkManager, dataPath string, fieldData *schemapb.FieldData, i int, offset int64, endian binary.ByteOrder) error {
+	dim := fieldData.GetVectors().GetDim()
+	rowBytes := dim * 2
+	content, err := vcm.ReadAt(ctx, dataPath, offset*rowBytes, rowBytes)
+	if err != nil {
+		return err
+	}
+	x := fieldData.GetVectors().GetData().(*schemapb.VectorField_Float16Vector)
+	float16Result := make([]byte, rowBytes)
+	buf := bytes.NewReader(content)
+	if err = binary.Read(buf, endian, &float16Result); err != nil {
+		return err
+	}
+	resultLen := dim * 2
+	copy(x.Float16Vector[i*int(resultLen):(i+1)*int(resultLen)], float16Result)
+	return nil
+}
+
+func fillBFloat16VecFieldData(ctx context.Context, vcm storage.ChunkManager, dataPath string, fieldData *schemapb.FieldData, i int, offset int64, endian binary.ByteOrder) error {
+	dim := fieldData.GetVectors().GetDim()
+	rowBytes := dim * 2
+	content, err := vcm.ReadAt(ctx, dataPath, offset*rowBytes, rowBytes)
+	if err != nil {
+		return err
+	}
+	x := fieldData.GetVectors().GetData().(*schemapb.VectorField_Bfloat16Vector)
+	bfloat16Result := make([]byte, rowBytes)
+	buf := bytes.NewReader(content)
+	if err = binary.Read(buf, endian, &bfloat16Result); err != nil {
+		return err
+	}
+	resultLen := dim * 2
+	copy(x.Bfloat16Vector[i*int(resultLen):(i+1)*int(resultLen)], bfloat16Result)
+	return nil
+}
+
 func fillSparseFloatVecFieldData(ctx context.Context, vcm storage.ChunkManager, dataPath string, fieldData *schemapb.FieldData, i int, offset int64, endian binary.ByteOrder) error {
 	return fmt.Errorf("fillSparseFloatVecFieldData not implemented")
 }
@@ -303,9 +339,9 @@ func fillFieldData(ctx context.Context, vcm storage.ChunkManager, dataPath strin
 	case schemapb.DataType_FloatVector:
 		return fillFloatVecFieldData(ctx, vcm, dataPath, fieldData, i, offset, endian)
 	case schemapb.DataType_Float16Vector:
-		return fillFloatVecFieldData(ctx, vcm, dataPath, fieldData, i, offset, endian)
+		return fillFloat16VecFieldData(ctx, vcm, dataPath, fieldData, i, offset, endian)
 	case schemapb.DataType_BFloat16Vector:
-		return fillFloatVecFieldData(ctx, vcm, dataPath, fieldData, i, offset, endian)
+		return fillBFloat16VecFieldData(ctx, vcm, dataPath, fieldData, i, offset, endian)
 	case schemapb.DataType_SparseFloatVector:
 		return fillSparseFloatVecFieldData(ctx, vcm, dataPath, fieldData, i, offset, endian)
 	case schemapb.DataType_Bool:
