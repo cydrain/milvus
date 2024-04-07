@@ -228,6 +228,12 @@ func (c *FieldReader) Next(count int64) (any, error) {
 			})
 		}
 		c.readPosition += int(readCount)
+	case schemapb.DataType_Float16Vector, schemapb.DataType_BFloat16Vector:
+		data, err = ReadN[byte](c.reader, c.order, readCount)
+		if err != nil {
+			return nil, err
+		}
+		c.readPosition += int(readCount)
 	default:
 		return nil, merr.WrapErrImportFailed(fmt.Sprintf("unsupported data type: %s", dt.String()))
 	}
