@@ -94,10 +94,13 @@ func (c *FieldReader) getCount(count int64) int64 {
 	if total == 0 {
 		return 0
 	}
-	if c.field.GetDataType() == schemapb.DataType_BinaryVector {
+	switch c.field.GetDataType() {
+	case schemapb.DataType_BinaryVector:
 		count *= c.dim / 8
-	} else if c.field.GetDataType() == schemapb.DataType_FloatVector {
+	case schemapb.DataType_FloatVector:
 		count *= c.dim
+	case schemapb.DataType_Float16Vector, schemapb.DataType_BFloat16Vector:
+		count *= c.dim * 2
 	}
 	if int(count) > (total - c.readPosition) {
 		return int64(total - c.readPosition)

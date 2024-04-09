@@ -170,6 +170,8 @@ func isConvertible(src, dst schemapb.DataType, isList bool) bool {
 		return dst == schemapb.DataType_BinaryVector
 	case schemapb.DataType_Float16Vector:
 		return dst == schemapb.DataType_Float16Vector
+	case schemapb.DataType_BFloat16Vector:
+		return dst == schemapb.DataType_BFloat16Vector
 	default:
 		return false
 	}

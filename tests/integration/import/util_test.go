@@ -124,6 +124,14 @@ func createInsertData(t *testing.T, schema *schemapb.CollectionSchema, rowCount 
 			_, err = rand2.Read(float16VecData)
 			assert.NoError(t, err)
 			insertData.Data[field.GetFieldID()] = &storage.Float16VectorFieldData{Data: float16VecData, Dim: int(dim)}
+		case schemapb.DataType_BFloat16Vector:
+			dim, err := typeutil.GetDim(field)
+			assert.NoError(t, err)
+			total := int64(rowCount) * dim * 2
+			bfloat16VecData := make([]byte, total)
+			_, err = rand2.Read(bfloat16VecData)
+			assert.NoError(t, err)
+			insertData.Data[field.GetFieldID()] = &storage.BFloat16VectorFieldData{Data: bfloat16VecData, Dim: int(dim)}
 		case schemapb.DataType_String, schemapb.DataType_VarChar:
 			varcharData := make([]string, 0)
 			for i := 0; i < rowCount; i++ {
@@ -177,13 +185,6 @@ func milvusDataTypeToArrowType(dataType schemapb.DataType, isBinary bool) arrow.
 		return &arrow.ListType{}
 	case schemapb.DataType_JSON:
 		return &arrow.StringType{}
-	case schemapb.DataType_FloatVector:
-		return arrow.ListOfField(arrow.Field{
-			Name:     "item",
-			Type:     &arrow.Float32Type{},
-			Nullable: true,
-			Metadata: arrow.Metadata{},
-		})
 	case schemapb.DataType_BinaryVector:
 		if isBinary {
 			return &arrow.BinaryType{}
@@ -194,10 +195,17 @@ func milvusDataTypeToArrowType(dataType schemapb.DataType, isBinary bool) arrow.
 			Nullable: true,
 			Metadata: arrow.Metadata{},
 		})
-	case schemapb.DataType_Float16Vector:
+	case schemapb.DataType_FloatVector:
 		return arrow.ListOfField(arrow.Field{
 			Name:     "item",
-			Type:     &arrow.Float16Type{},
+			Type:     &arrow.Float32Type{},
+			Nullable: true,
+			Metadata: arrow.Metadata{},
+		})
+	case schemapb.DataType_Float16Vector, schemapb.DataType_BFloat16Vector:
+		return arrow.ListOfField(arrow.Field{
+			Name:     "item",
+			Type:     &arrow.Uint8Type{},
 			Nullable: true,
 			Metadata: arrow.Metadata{},
 		})
@@ -296,19 +304,6 @@ func buildArrayData(dataType, elementType schemapb.DataType, dim, rows int, isBi
 			builder.Append(randomString(10))
 		}
 		return builder.NewStringArray()
-	case schemapb.DataType_FloatVector:
-		builder := array.NewListBuilder(mem, &arrow.Float32Type{})
-		offsets := make([]int32, 0, rows)
-		valid := make([]bool, 0, rows)
-		for i := 0; i < dim*rows; i++ {
-			builder.ValueBuilder().(*array.Float32Builder).Append(float32(i))
-		}
-		for i := 0; i < rows; i++ {
-			offsets = append(offsets, int32(i*dim))
-			valid = append(valid, true)
-		}
-		builder.AppendValues(offsets, valid)
-		return builder.NewListArray()
 	case schemapb.DataType_BinaryVector:
 		if isBinary {
 			builder := array.NewBinaryBuilder(mem, &arrow.BinaryType{})
@@ -324,11 +319,39 @@ func buildArrayData(dataType, elementType schemapb.DataType, dim, rows int, isBi
 		builder := array.NewListBuilder(mem, &arrow.Uint8Type{})
 		offsets := make([]int32, 0, rows)
 		valid := make([]bool, 0)
-		for i := 0; i < dim*rows/8; i++ {
-			builder.ValueBuilder().(*array.Uint8Builder).Append(uint8(i))
+		rowBytes := dim / 8
+		for i := 0; i < rowBytes*rows; i++ {
+			builder.ValueBuilder().(*array.Uint8Builder).Append(uint8(i % 256))
 		}
 		for i := 0; i < rows; i++ {
-			offsets = append(offsets, int32(dim*i/8))
+			offsets = append(offsets, int32(rowBytes*i))
+			valid = append(valid, true)
+		}
+		builder.AppendValues(offsets, valid)
+		return builder.NewListArray()
+	case schemapb.DataType_FloatVector:
+		builder := array.NewListBuilder(mem, &arrow.Float32Type{})
+		offsets := make([]int32, 0, rows)
+		valid := make([]bool, 0, rows)
+		for i := 0; i < dim*rows; i++ {
+			builder.ValueBuilder().(*array.Float32Builder).Append(float32(i))
+		}
+		for i := 0; i < rows; i++ {
+			offsets = append(offsets, int32(dim*i))
+			valid = append(valid, true)
+		}
+		builder.AppendValues(offsets, valid)
+		return builder.NewListArray()
+	case schemapb.DataType_Float16Vector, schemapb.DataType_BFloat16Vector:
+		builder := array.NewListBuilder(mem, &arrow.Uint8Type{})
+		offsets := make([]int32, 0, rows)
+		valid := make([]bool, 0)
+		rowBytes := dim * 2
+		for i := 0; i < rowBytes*rows; i++ {
+			builder.ValueBuilder().(*array.Uint8Builder).Append(uint8(i % 256))
+		}
+		for i := 0; i < rows; i++ {
+			offsets = append(offsets, int32(rowBytes*i))
 			valid = append(valid, true)
 		}
 		builder.AppendValues(offsets, valid)
@@ -542,10 +565,14 @@ func GenerateNumpyFile(filePath string, rowCount int, dType schemapb.DataType) e
 			return err
 		}
 	case schemapb.DataType_BinaryVector:
-		binVecData := make([]byte, 0)
-		total := rowCount * dim / 8
-		for i := 0; i < total; i++ {
-			binVecData = append(binVecData, byte(i%256))
+		const rowBytes = dim / 8
+		binVecData := make([][rowBytes]byte, 0, rowCount)
+		for i := 0; i < rowCount; i++ {
+			vec := [rowBytes]byte{}
+			for j := 0; j < rowBytes; j++ {
+				vec[j] = byte((i + j) % 256)
+			}
+			binVecData = append(binVecData, vec)
 		}
 		err := writeFn(filePath, binVecData)
 		if err != nil {
@@ -556,7 +583,7 @@ func GenerateNumpyFile(filePath string, rowCount int, dType schemapb.DataType) e
 		for i := 0; i < rowCount; i++ {
 			vec := [dim]float32{}
 			for j := 0; j < dim; j++ {
-				vec[j] = 1.1
+				vec[j] = rand.Float32()
 			}
 			data = append(data, vec)
 		}
@@ -564,14 +591,17 @@ func GenerateNumpyFile(filePath string, rowCount int, dType schemapb.DataType) e
 		if err != nil {
 			return err
 		}
-	case schemapb.DataType_Float16Vector:
-		total := int64(rowCount) * dim * 2
-		float16VecData := make([]byte, total)
-		_, err := rand2.Read(float16VecData)
-		if err != nil {
-			return err
+	case schemapb.DataType_Float16Vector, schemapb.DataType_BFloat16Vector:
+		const rowBytes = dim * 2
+		data := make([][rowBytes]byte, 0, rowCount)
+		for i := 0; i < rowCount; i++ {
+			vec := [rowBytes]byte{}
+			for j := 0; j < rowBytes; j++ {
+				vec[j] = byte(rand.Uint32() % 256)
+			}
+			data = append(data, vec)
 		}
-		err = writeFn(filePath, float16VecData)
+		err := writeFn(filePath, data)
 		if err != nil {
 			return err
 		}
@@ -628,18 +658,19 @@ func GenerateJSONFile(t *testing.T, filePath string, schema *schemapb.Collection
 			if fieldIDToField[fieldID].GetAutoID() {
 				continue
 			}
-			if dataType == schemapb.DataType_Array {
+			switch dataType {
+			case schemapb.DataType_Array:
 				data[fieldID] = v.GetRow(i).(*schemapb.ScalarField).GetIntData().GetData()
-			} else if dataType == schemapb.DataType_JSON {
+			case schemapb.DataType_JSON:
 				data[fieldID] = string(v.GetRow(i).([]byte))
-			} else if dataType == schemapb.DataType_BinaryVector || dataType == schemapb.DataType_Float16Vector {
+			case schemapb.DataType_BinaryVector, schemapb.DataType_Float16Vector, schemapb.DataType_BFloat16Vector:
 				bytes := v.GetRow(i).([]byte)
 				ints := make([]int, 0, len(bytes))
 				for _, b := range bytes {
 					ints = append(ints, int(b))
 				}
 				data[fieldID] = ints
-			} else {
+			default:
 				data[fieldID] = v.GetRow(i)
 			}
 		}
