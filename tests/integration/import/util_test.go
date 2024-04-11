@@ -40,6 +40,7 @@ import (
 	"github.com/milvus-io/milvus-proto/go-api/v2/schemapb"
 	"github.com/milvus-io/milvus/internal/proto/internalpb"
 	"github.com/milvus-io/milvus/internal/storage"
+	pq "github.com/milvus-io/milvus/internal/util/importutilv2/parquet"
 	"github.com/milvus-io/milvus/pkg/log"
 	"github.com/milvus-io/milvus/pkg/util/merr"
 	"github.com/milvus-io/milvus/pkg/util/typeutil"
@@ -163,87 +164,6 @@ func createInsertData(t *testing.T, schema *schemapb.CollectionSchema, rowCount 
 	return insertData
 }
 
-func milvusDataTypeToArrowType(dataType schemapb.DataType, isBinary bool) arrow.DataType {
-	switch dataType {
-	case schemapb.DataType_Bool:
-		return &arrow.BooleanType{}
-	case schemapb.DataType_Int8:
-		return &arrow.Int8Type{}
-	case schemapb.DataType_Int16:
-		return &arrow.Int16Type{}
-	case schemapb.DataType_Int32:
-		return &arrow.Int32Type{}
-	case schemapb.DataType_Int64:
-		return &arrow.Int64Type{}
-	case schemapb.DataType_Float:
-		return &arrow.Float32Type{}
-	case schemapb.DataType_Double:
-		return &arrow.Float64Type{}
-	case schemapb.DataType_VarChar, schemapb.DataType_String:
-		return &arrow.StringType{}
-	case schemapb.DataType_Array:
-		return &arrow.ListType{}
-	case schemapb.DataType_JSON:
-		return &arrow.StringType{}
-	case schemapb.DataType_BinaryVector:
-		if isBinary {
-			return &arrow.BinaryType{}
-		}
-		return arrow.ListOfField(arrow.Field{
-			Name:     "item",
-			Type:     &arrow.Uint8Type{},
-			Nullable: true,
-			Metadata: arrow.Metadata{},
-		})
-	case schemapb.DataType_FloatVector:
-		return arrow.ListOfField(arrow.Field{
-			Name:     "item",
-			Type:     &arrow.Float32Type{},
-			Nullable: true,
-			Metadata: arrow.Metadata{},
-		})
-	case schemapb.DataType_Float16Vector, schemapb.DataType_BFloat16Vector:
-		return arrow.ListOfField(arrow.Field{
-			Name:     "item",
-			Type:     &arrow.Uint8Type{},
-			Nullable: true,
-			Metadata: arrow.Metadata{},
-		})
-	default:
-		panic("unsupported data type")
-	}
-}
-
-func convertMilvusSchemaToArrowSchema(schema *schemapb.CollectionSchema) *arrow.Schema {
-	fields := make([]arrow.Field, 0)
-	for _, field := range schema.GetFields() {
-		if field.GetIsPrimaryKey() && field.GetAutoID() {
-			continue
-		}
-		if field.GetDataType() == schemapb.DataType_Array {
-			fields = append(fields, arrow.Field{
-				Name: field.GetName(),
-				Type: arrow.ListOfField(arrow.Field{
-					Name:     "item",
-					Type:     milvusDataTypeToArrowType(field.GetElementType(), false),
-					Nullable: true,
-					Metadata: arrow.Metadata{},
-				}),
-				Nullable: true,
-				Metadata: arrow.Metadata{},
-			})
-			continue
-		}
-		fields = append(fields, arrow.Field{
-			Name:     field.GetName(),
-			Type:     milvusDataTypeToArrowType(field.GetDataType(), field.Name == "FieldBinaryVector2"),
-			Nullable: true,
-			Metadata: arrow.Metadata{},
-		})
-	}
-	return arrow.NewSchema(fields, nil)
-}
-
 func randomString(length int) string {
 	letterRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	b := make([]rune, length)
@@ -253,7 +173,7 @@ func randomString(length int) string {
 	return string(b)
 }
 
-func buildArrayData(dataType, elementType schemapb.DataType, dim, rows int, isBinary bool) arrow.Array {
+func buildArrayData(dataType, elemType schemapb.DataType, dim, rows int) arrow.Array {
 	mem := memory.NewGoAllocator()
 	switch dataType {
 	case schemapb.DataType_Bool:
@@ -305,17 +225,6 @@ func buildArrayData(dataType, elementType schemapb.DataType, dim, rows int, isBi
 		}
 		return builder.NewStringArray()
 	case schemapb.DataType_BinaryVector:
-		if isBinary {
-			builder := array.NewBinaryBuilder(mem, &arrow.BinaryType{})
-			for i := 0; i < rows; i++ {
-				element := make([]byte, dim/8)
-				for j := 0; j < dim/8; j++ {
-					element[j] = randomString(1)[0]
-				}
-				builder.Append(element)
-			}
-			return builder.NewBinaryArray()
-		}
 		builder := array.NewListBuilder(mem, &arrow.Uint8Type{})
 		offsets := make([]int32, 0, rows)
 		valid := make([]bool, 0)
@@ -371,7 +280,7 @@ func buildArrayData(dataType, elementType schemapb.DataType, dim, rows int, isBi
 			offsets = append(offsets, int32(index))
 			valid = append(valid, true)
 		}
-		switch elementType {
+		switch elemType {
 		case schemapb.DataType_Bool:
 			builder := array.NewListBuilder(mem, &arrow.BooleanType{})
 			valueBuilder := builder.ValueBuilder().(*array.BooleanBuilder)
@@ -447,7 +356,7 @@ func GenerateParquetFile(filePath string, schema *schemapb.CollectionSchema, num
 		return err
 	}
 
-	pqSchema := convertMilvusSchemaToArrowSchema(schema)
+	pqSchema := pq.ConvertToArrowSchema(schema)
 	fw, err := pqarrow.NewFileWriter(pqSchema, w, parquet.NewWriterProperties(parquet.WithMaxRowGroupLength(int64(numRows))), pqarrow.DefaultWriterProps())
 	if err != nil {
 		return err
@@ -459,7 +368,7 @@ func GenerateParquetFile(filePath string, schema *schemapb.CollectionSchema, num
 		if field.GetIsPrimaryKey() && field.GetAutoID() {
 			continue
 		}
-		columnData := buildArrayData(field.DataType, field.ElementType, dim, numRows, field.Name == "FieldBinaryVector2")
+		columnData := buildArrayData(field.DataType, field.ElementType, dim, numRows)
 		columns = append(columns, columnData)
 	}
 	recordBatch := array.NewRecord(pqSchema, columns, int64(numRows))
