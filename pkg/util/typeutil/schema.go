@@ -1550,12 +1550,27 @@ func CreateSparseFloatRowFromMap(input map[string]interface{}) ([]byte, error) {
 		return nil, fmt.Errorf("empty JSON input")
 	}
 
-	// try format1
-	indices, ok1 := input["indices"].([]uint32)
-	values, ok2 := input["values"].([]float32)
+	jsonIndices, ok1 := input["indices"].([]interface{})
+	jsonValues, ok2 := input["values"].([]interface{})
 
-	// try format2
-	if !ok1 && !ok2 {
+	if ok1 && ok2 {
+		// try format1
+		for _, v1 := range jsonIndices {
+			num, ok := v1.(float64)
+			if !ok {
+				return nil, fmt.Errorf("invalid value type: %s", reflect.TypeOf(v1))
+			}
+			indices = append(indices, uint32(num))
+		}
+		for _, v2 := range jsonValues {
+			num, ok := v2.(float64)
+			if !ok {
+				return nil, fmt.Errorf("invalid value type: %s", reflect.TypeOf(v2))
+			}
+			values = append(values, float32(num))
+		}
+	} else if !ok1 && !ok2 {
+		// try format2
 		for k, v := range input {
 			idx, err := strconv.ParseUint(k, 0, 32)
 			if err != nil {

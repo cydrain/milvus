@@ -2207,3 +2207,111 @@ func TestParseJsonSparseFloatRow(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestParseJsonSparseFloatRowBytes(t *testing.T) {
+	t.Run("valid row 1", func(t *testing.T) {
+		row := []byte(`{"indices":[1,3,5],"values":[1.0,2.0,3.0]}`)
+		res, err := CreateSparseFloatRowFromJSON(row)
+		assert.NoError(t, err)
+		assert.Equal(t, CreateSparseFloatRow([]uint32{1, 3, 5}, []float32{1.0, 2.0, 3.0}), res)
+	})
+
+	t.Run("valid row 2", func(t *testing.T) {
+		row := []byte(`{"indices":[3,1,5],"values":[1.0,2.0,3.0]}`)
+		res, err := CreateSparseFloatRowFromJSON(row)
+		assert.NoError(t, err)
+		assert.Equal(t, CreateSparseFloatRow([]uint32{1, 3, 5}, []float32{2.0, 1.0, 3.0}), res)
+	})
+
+	t.Run("invalid row 1", func(t *testing.T) {
+		row := []byte(`{"indices":[1,3,5],"values":[1.0,2.0,3.0`)
+		_, err := CreateSparseFloatRowFromJSON(row)
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid row 2", func(t *testing.T) {
+		row := []byte(`{"indices":[1,3,5],"values":[1.0,2.0]`)
+		_, err := CreateSparseFloatRowFromJSON(row)
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid row 3", func(t *testing.T) {
+		row := []byte(`{"indices":[1],"values":[1.0,2.0]`)
+		_, err := CreateSparseFloatRowFromJSON(row)
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid row 4", func(t *testing.T) {
+		row := []byte(`{"indices":[],"values":[]`)
+		_, err := CreateSparseFloatRowFromJSON(row)
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid row 5", func(t *testing.T) {
+		row := []byte(`{"indices":[-3],"values":[0.2]`)
+		_, err := CreateSparseFloatRowFromJSON(row)
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid row 6", func(t *testing.T) {
+		row := []byte(`{"indices":[3],"values":[-0.2]`)
+		_, err := CreateSparseFloatRowFromJSON(row)
+		assert.Error(t, err)
+	})
+
+	t.Run("valid dict row 1", func(t *testing.T) {
+		row := []byte(`{"1": 1.0, "3": 2.0, "5": 3.0}`)
+		res, err := CreateSparseFloatRowFromJSON(row)
+		assert.NoError(t, err)
+		assert.Equal(t, CreateSparseFloatRow([]uint32{1, 3, 5}, []float32{1.0, 2.0, 3.0}), res)
+	})
+
+	t.Run("valid dict row 2", func(t *testing.T) {
+		row := []byte(`{"3": 1.0, "1": 2.0, "5": 3.0}`)
+		res, err := CreateSparseFloatRowFromJSON(row)
+		assert.NoError(t, err)
+		assert.Equal(t, CreateSparseFloatRow([]uint32{1, 3, 5}, []float32{2.0, 1.0, 3.0}), res)
+	})
+
+	t.Run("invalid dict row 1", func(t *testing.T) {
+		row := []byte(`{"a": 1.0, "3": 2.0, "5": 3.0}`)
+		_, err := CreateSparseFloatRowFromJSON(row)
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid dict row 2", func(t *testing.T) {
+		row := []byte(`{"1": "a", "3": 2.0, "5": 3.0}`)
+		_, err := CreateSparseFloatRowFromJSON(row)
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid dict row 3", func(t *testing.T) {
+		row := []byte(`{"1": "1.0", "3": 2.0, "5": 3.0}`)
+		_, err := CreateSparseFloatRowFromJSON(row)
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid dict row 4", func(t *testing.T) {
+		row := []byte(`{"1": 1.0, "3": 2.0, "5": }`)
+		_, err := CreateSparseFloatRowFromJSON(row)
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid dict row 5", func(t *testing.T) {
+		row := []byte(`{"-1": 1.0, "3": 2.0, "5": 3.0}`)
+		_, err := CreateSparseFloatRowFromJSON(row)
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid dict row 6", func(t *testing.T) {
+		row := []byte(`{"1": -1.0, "3": 2.0, "5": 3.0}`)
+		_, err := CreateSparseFloatRowFromJSON(row)
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid dict row 7", func(t *testing.T) {
+		row := []byte(`{}`)
+		_, err := CreateSparseFloatRowFromJSON(row)
+		assert.Error(t, err)
+	})
+}
